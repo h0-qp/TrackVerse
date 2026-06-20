@@ -13,10 +13,13 @@ workflows:
           cp .env.example .env || true
       - name: Ensure permission on gradlew
         script: chmod +x gradlew
-      - name: Decode Keystore
+      - name: Setup Keystore
         script: |
           if [ -f debug.keystore.base64 ]; then
-            base64 -d debug.keystore.base64 > debug.keystore
+            base64 -d debug.keystore.base64 > debug.keystore || base64 -D debug.keystore.base64 > debug.keystore || true
+          fi
+          if [ ! -f debug.keystore ]; then
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
           fi
       - name: Build Android App (Debug)
         script: |
