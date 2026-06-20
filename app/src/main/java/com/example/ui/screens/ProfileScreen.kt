@@ -24,6 +24,9 @@ import coil.compose.AsyncImage
 import com.example.ui.theme.*
 import com.example.viewmodel.AuthViewModel
 
+import androidx.compose.ui.res.stringResource
+import com.example.R
+
 @Composable
 fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel = viewModel()) {
     val user by viewModel.user.collectAsState()
@@ -73,13 +76,13 @@ fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    text = user?.displayName ?: "Guest User",
+                    text = user?.displayName ?: stringResource(R.string.guest_user),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
                 Text(
-                    text = user?.email ?: "Anonymous",
+                    text = user?.email ?: stringResource(R.string.anonymous),
                     fontSize = 14.sp,
                     color = TextTertiary,
                     modifier = Modifier.padding(top = 8.dp)
@@ -93,20 +96,20 @@ fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) {
-                    Text("Sign Out", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(stringResource(R.string.sign_out), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             } else {
                 // Logged out UI
-                Text("TrackVerse", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = BlueHighlight, letterSpacing = 2.sp)
+                Text(stringResource(R.string.app_name), fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = BlueHighlight, letterSpacing = 2.sp)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Sign in to sync your watchlist", fontSize = 16.sp, color = TextTertiary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(stringResource(R.string.sign_in_to_sync), fontSize = 16.sp, color = TextTertiary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it; viewModel.clearError() },
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.email)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -114,7 +117,7 @@ fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; viewModel.clearError() },
-                    label = { Text("Password") },
+                    label = { Text(stringResource(R.string.password)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -126,11 +129,11 @@ fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("Login / Register with Email", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(stringResource(R.string.login_register_email), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("OR", fontSize = 14.sp, color = TextTertiary, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.or), fontSize = 14.sp, color = TextTertiary, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
@@ -139,13 +142,13 @@ fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("Sign in with Google", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(stringResource(R.string.sign_in_google), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 TextButton(onClick = { viewModel.signInAsGuest() }) {
-                    Text("Continue as Guest", color = TextSecondary, fontSize = 14.sp)
+                    Text(stringResource(R.string.continue_guest), color = TextSecondary, fontSize = 14.sp)
                 }
 
                 if (error != null) {

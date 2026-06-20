@@ -16,16 +16,40 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.ui.theme.*
 
+import android.app.Activity
+import java.util.Locale
+import androidx.compose.ui.platform.LocalContext
+
+import com.example.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavController) {
-    var selectedLanguage by remember { mutableStateOf("English") }
+    val context = LocalContext.current
+    val currentLang = context.resources.configuration.locales.get(0).language
+    var selectedLanguage by remember { mutableStateOf(if (currentLang == "ar") "العربية" else "English") }
     var notificationsEnabled by remember { mutableStateOf(true) }
+
+    fun changeLanguage(language: String) {
+        selectedLanguage = language
+        val localeCode = if (language == "العربية") "ar" else "en"
+        val locale = Locale(localeCode)
+        Locale.setDefault(locale)
+        val config = context.resources.configuration
+        config.setLocale(locale)
+        context.resources.updateConfiguration(config, context.resources.displayMetrics)
+
+        if (context is Activity) {
+            val intent = context.intent
+            context.finish()
+            context.startActivity(intent)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(R.string.settings), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -46,14 +70,14 @@ fun SettingsScreen(navController: NavController) {
                 .padding(padding)
                 .padding(24.dp)
         ) {
-            Text("Preferences", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = BlueHighlight, modifier = Modifier.padding(bottom = 16.dp))
+            Text(androidx.compose.ui.res.stringResource(R.string.preferences), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = BlueHighlight, modifier = Modifier.padding(bottom = 16.dp))
             
             // Language Selection
-            Text("Language", fontSize = 16.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+            Text(androidx.compose.ui.res.stringResource(R.string.language), fontSize = 16.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                LanguageOption("English", selectedLanguage == "English") { selectedLanguage = "English" }
-                LanguageOption("العربية", selectedLanguage == "العربية") { selectedLanguage = "العربية" }
+                LanguageOption("English", selectedLanguage == "English") { changeLanguage("English") }
+                LanguageOption("العربية", selectedLanguage == "العربية") { changeLanguage("العربية") }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -65,8 +89,8 @@ fun SettingsScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Notifications", fontSize = 16.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
-                    Text("Remind me before episodes air", fontSize = 12.sp, color = TextTertiary)
+                    Text(androidx.compose.ui.res.stringResource(R.string.notifications), fontSize = 16.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+                    Text(androidx.compose.ui.res.stringResource(R.string.remind_episodes), fontSize = 12.sp, color = TextTertiary)
                 }
                 Switch(
                     checked = notificationsEnabled,

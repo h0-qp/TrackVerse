@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,7 +29,7 @@ import com.example.network.TmdbShow
 import com.example.ui.theme.*
 import com.example.viewmodel.SearchViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(navController: NavController, viewModel: SearchViewModel = viewModel()) {
     val query by viewModel.query.collectAsState()
@@ -92,8 +94,12 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel = view
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SearchResultItem(show: TmdbShow, modifier: Modifier = Modifier) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
@@ -103,10 +109,21 @@ fun SearchResultItem(show: TmdbShow, modifier: Modifier = Modifier) {
                 .background(SurfaceDark)
                 .border(1.dp, BorderStroke, RoundedCornerShape(12.dp))
         ) {
+            var imgModifier = Modifier.fillMaxSize()
+            if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                with(sharedTransitionScope) {
+                    imgModifier = imgModifier.sharedElement(
+                        state = rememberSharedContentState(key = "image-${show.id}"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                    )
+                }
+            }
+
             AsyncImage(
                 model = "https://image.tmdb.org/t/p/w342${show.posterPath}",
                 contentDescription = show.name ?: show.title,
-                modifier = Modifier.fillMaxSize(),
+                modifier = imgModifier,
                 contentScale = ContentScale.Crop
             )
         }

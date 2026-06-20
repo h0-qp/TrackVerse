@@ -4,14 +4,22 @@ try {
     const serversRes = execSync('curl -s https://api.gofile.io/servers');
     const servers = JSON.parse(serversRes.toString());
     
-    // Pick a random server to avoid hanging servers
     const serverList = servers.data.servers;
-    const serverName = serverList[Math.floor(Math.random() * serverList.length)].name;
     
-    console.log('Got server:', serverName, 'Uploading...');
-    // Add -m 45 for max time 45 seconds to avoid silent timeouts
-    const output = execSync(`curl -m 45 -s -F "file=@./app/build/outputs/apk/debug/app-debug.apk" https://${serverName}.gofile.io/contents/uploadfile`);
-    console.log("URL:", output.toString());
+    for (const server of serverList) {
+        const serverName = server.name;
+        console.log('Trying server:', serverName, 'Uploading...');
+        try {
+            const output = execSync(`curl -m 30 -s -F "file=@./app/build/outputs/apk/debug/app-debug.apk" https://${serverName}.gofile.io/contents/uploadfile`);
+            const resStr = output.toString();
+            console.log("URL:", resStr);
+            if (resStr.includes('"status":"ok"')) {
+                break;
+            }
+        } catch (err) {
+            console.log('Failed on', serverName, 'trying next...');
+        }
+    }
 } catch (e) {
     console.error(e);
 }

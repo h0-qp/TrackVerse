@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,18 +26,37 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.R
 import com.example.network.TmdbShow
 import com.example.ui.theme.*
 import com.example.viewmodel.HomeViewModel
 
+import androidx.compose.ui.res.stringResource
+import com.example.viewmodel.WatchlistViewModel
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel(), watchlistViewModel: WatchlistViewModel = viewModel()) {
     val authViewModel: com.example.viewmodel.AuthViewModel = viewModel()
     val user by authViewModel.user.collectAsState()
     val trendingShows by viewModel.trendingShows.collectAsState()
     val topRatedShows by viewModel.topRatedShows.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    
+    val watchlist by watchlistViewModel.watchlist.collectAsState()
+    val watchedCounts by watchlistViewModel.watchedEpisodesCount.collectAsState()
+
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
+    LaunchedEffect(user) {
+        watchlistViewModel.loadWatchlist()
+    }
+    
+    val totalShows = watchlist.count { it.title == null }.toString()
+    val totalMovies = watchlist.count { it.name == null }.toString()
+    val totalWatchedEpisodes = watchedCounts.values.sum().toString()
 
     Column(
         modifier = Modifier
@@ -53,7 +74,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         ) {
             Column {
                 Text(
-                    text = "TRACKVERSE",
+                    text = androidx.compose.ui.res.stringResource(id = R.string.app_name).uppercase(),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = BlueHighlight,
@@ -61,7 +82,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                 )
                 if (user == null || user?.isAnonymous == true) {
                     Text(
-                        text = "Hello, User",
+                        text = stringResource(R.string.guest_user),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary,
@@ -99,9 +120,9 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatCard("128", "SHOWS", Modifier.weight(1f))
-            StatCard("14.2d", "WATCHED", Modifier.weight(1f))
-            StatCard("842", "EPISODES", Modifier.weight(1f))
+            StatCard(totalShows, stringResource(R.string.shows), Modifier.weight(1f))
+            StatCard(totalMovies, stringResource(R.string.movies).uppercase(), Modifier.weight(1f))
+            StatCard(totalWatchedEpisodes, stringResource(R.string.episodes), Modifier.weight(1f))
         }
 
         // Continue Watching Section
@@ -110,8 +131,8 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom
         ) {
-            Text("Trending Today", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
-            Text("View All", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = BlueHighlight)
+            Text(stringResource(R.string.trending_today), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+            Text(stringResource(R.string.view_all), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = BlueHighlight)
         }
 
         // Hero Card
@@ -125,13 +146,24 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     .background(SurfaceDark)
                     .padding(bottom = 32.dp)
             ) {
+                var imgModifier = Modifier.fillMaxSize().clickable {
+                    val isMovie = heroShow.title != null
+                    navController.navigate("details/${heroShow.id}/$isMovie")
+                }
+                if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                    with(sharedTransitionScope) {
+                        imgModifier = imgModifier.sharedElement(
+                            state = rememberSharedContentState(key = "image-${heroShow.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                        )
+                    }
+                }
+
                 AsyncImage(
                     model = "https://image.tmdb.org/t/p/w780${heroShow.backdropPath ?: heroShow.posterPath}",
                     contentDescription = heroShow.name ?: heroShow.title,
-                    modifier = Modifier.fillMaxSize().clickable {
-                        val isMovie = heroShow.title != null
-                        navController.navigate("details/${heroShow.id}/$isMovie")
-                    },
+                    modifier = imgModifier,
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
                 // Gradient Overlay
@@ -157,7 +189,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Column {
-                            Text("★ ${heroShow.voteAverage ?: "N/A"}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BlueLight)
+                            Text("★ ${heroShow.voteAverage?.toString()?.take(3) ?: stringResource(R.string.not_available)}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BlueLight)
                             Text(heroShow.name ?: heroShow.title ?: "Unknown", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                         }
                         Box(
@@ -166,7 +198,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                 .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                                 .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
-                            Text("TRENDING", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Text(stringResource(R.string.trending).uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                         }
                     }
                 }
@@ -178,7 +210,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Top Rated Shows", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+            Text(stringResource(R.string.top_rated_shows), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
         }
 
         Row(
@@ -189,6 +221,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                 val displays = topRatedShows.take(3)
                 displays.forEach { show ->
                     AiRecItem(
+                        id = show.id,
                         title = show.name ?: show.title ?: "Unknown",
                         imageUrl = "https://image.tmdb.org/t/p/w342${show.posterPath}",
                         modifier = Modifier.weight(1f).clickable {
@@ -222,8 +255,12 @@ fun StatCard(value: String, label: String, modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun AiRecItem(title: String, imageUrl: String, modifier: Modifier = Modifier) {
+fun AiRecItem(id: Int, title: String, imageUrl: String, modifier: Modifier = Modifier) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
@@ -233,10 +270,21 @@ fun AiRecItem(title: String, imageUrl: String, modifier: Modifier = Modifier) {
                 .background(SurfaceDark)
                 .border(1.dp, BorderStroke, RoundedCornerShape(16.dp))
         ) {
+            var imgModifier = Modifier.fillMaxSize()
+            if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                with(sharedTransitionScope) {
+                    imgModifier = imgModifier.sharedElement(
+                        state = rememberSharedContentState(key = "image-$id"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                    )
+                }
+            }
+
             AsyncImage(
                 model = imageUrl,
                 contentDescription = title,
-                modifier = Modifier.fillMaxSize(),
+                modifier = imgModifier,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.2f) })
             )

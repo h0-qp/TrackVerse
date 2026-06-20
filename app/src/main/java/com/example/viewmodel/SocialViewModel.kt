@@ -1,0 +1,148 @@
+package com.example.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+
+data class UserProfile(
+    val uid: String = "",
+    val email: String = "",
+    val displayName: String = ""
+)
+
+data class SocialActivity(
+    val id: String = "",
+    val userId: String = "",
+    val userName: String = "",
+    val actionType: String = "", // "WATCHED", "ADDED_WATCHLIST"
+    val showId: Int = 0,
+    val showName: String = "",
+    val details: String = "", // S01E03
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+class SocialViewModel : ViewModel() {
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
+    private val _searchResults = MutableStateFlow<List<UserProfile>>(emptyList())
+    val searchResults: StateFlow<List<UserProfile>> = _searchResults.asStateFlow()
+
+    private val _following = MutableStateFlow<List<String>>(emptyList())
+    val following: StateFlow<List<String>> = _following.asStateFlow()
+    
+    private val _feed = MutableStateFlow<List<SocialActivity>>(emptyList())
+    val feed: StateFlow<List<SocialActivity>> = _feed.asStateFlow()
+
+    init {
+        saveUserProfile()
+        loadFollowing()
+    }
+
+    private fun saveUserProfile() {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val profile = UserProfile(
+                    uid = user.uid,
+                    email = user.email ?: "",
+                    displayName = user.displayName ?: user.email?.substringBefore("@") ?: "User"
+                )
+                db.collection("users").document(user.uid).set(profile).await()
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    fun searchUsers(query: String) {
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        viewModelScope.launch {
+            try {
+                // simple search by prefix in email or displayName is hard in firestore without extra tools.
+                // We will just fetch all users and filter locally to make it simple (as this is a prototype).
+                val snap = db.collection("users").get().await()
+                val users = snap.documents.mapNotNull { it.toObject(UserProfile::class.java) }
+                _searchResults.value = users.filter { 
+                    it.email.contains(query, ignoreCase = true) || it.displayName.contains(query, ignoreCase = true)
+                }.filter { it.uid != auth.currentUser?.uid }
+            } catch (e: Exception) {}
+        }
+    }
+
+    fun loadFollowing() {
+        val uid = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                val snap = db.collection("users").document(uid).collection("following").get().await()
+                val followingIds = snap.documents.map { it.id }
+                _following.value = followingIds
+                if (followingIds.isNotEmpty()) {
+                    loadFeed(followingIds)
+                }
+            } catch (e: Exception) {}
+        }
+    }
+
+    fun toggleFollow(targetUid: String) {
+        val uid = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                val ref = db.collection("users").document(uid).collection("following").document(targetUid)
+                if (_following.value.contains(targetUid)) {
+                    ref.delete().await()
+                    _following.value = _following.value - targetUid
+                } else {
+                    ref.set(mapOf("timestamp" to System.currentTimeMillis())).await()
+                    _following.value = _following.value + targetUid
+                }
+            } catch (e: Exception) {}
+        }
+    }
+
+    private fun loadFeed(followingIds: List<String>) {
+        viewModelScope.launch {
+            try {
+                // Firestore 'in' query supports up to 10. For simplicity, just pick first 10
+                val idsToQuery = followingIds.take(10)
+                if (idsToQuery.isEmpty()) return@launch
+                
+                val snap = db.collection("activity")
+                    .whereIn("userId", idsToQuery)
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .limit(50)
+                    .get().await()
+
+                val activities = snap.documents.mapNotNull {
+                    it.toObject(SocialActivity::class.java)?.copy(id = it.id)
+                }
+                _feed.value = activities
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    fun publishActivity(actionType: String, showId: Int, showName: String, details: String) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val act = SocialActivity(
+                    userId = user.uid,
+                    userName = user.displayName ?: user.email?.substringBefore("@") ?: "User",
+                    actionType = actionType,
+                    showId = showId,
+                    showName = showName,
+                    details = details
+                )
+                db.collection("activity").add(act).await()
+            } catch (e: Exception) {}
+        }
+    }
+}

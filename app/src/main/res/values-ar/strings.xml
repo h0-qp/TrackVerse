@@ -1,0 +1,72 @@
+<resources>
+    <string name="app_name">TrackVerse</string>
+    <string name="home">الرئيسية</string>
+    <string name="search">بحث</string>
+    <string name="watchlist">قائمتي</string>
+    <string name="profile">حسابي</string>
+    
+    <!-- Profile & Auth -->
+    <string name="sign_in_to_sync">سجل الدخول لمزامنة قائمتك</string>
+    <string name="email">البريد الإلكتروني</string>
+    <string name="password">كلمة المرور</string>
+    <string name="login_register_email">تسجيل الدخول / إنشاء حساب</string>
+    <string name="or">أو</string>
+    <string name="sign_in_google">تسجيل الدخول عبر جوجل</string>
+    <string name="continue_guest">المتابعة كزائر</string>
+    <string name="sign_out">تسجيل الخروج</string>
+    <string name="guest_user">زائر</string>
+    <string name="anonymous">مجهول</string>
+    
+    <!-- Settings -->
+    <string name="settings">الإعدادات</string>
+    <string name="preferences">التفضيلات</string>
+    <string name="language">اللغة</string>
+    <string name="notifications">الإشعارات</string>
+    <string name="remind_episodes">تذكيري قبل عرض الحلقات</string>
+    <string name="about">حول التطبيق</string>
+    
+    <!-- Details -->
+    <string name="seasons_and_episodes">المواسم والحلقات</string>
+    <string name="subscribe_series">الاشتراك في المسلسل</string>
+    <string name="unsubscribe_remove">إلغاء الاشتراك / إزالة</string>
+    <string name="season">موسم</string>
+    <string name="in_days">بعد %1$d أيام</string>
+    <string name="tba">غير محدد</string>
+    <string name="unknown_date">تاريخ غير معروف</string>
+    <string name="next_episode">الحلقة القادمة</string>
+    <string name="airs">العرض: %1$s</string>
+    <string name="not_available">غير متوفر</string>
+    
+    <!-- Home -->
+    <string name="trending">الرائج</string>
+    <string name="movies">أفلام</string>
+    <string name="tv_shows">مسلسلات</string>
+    <string name="episodes">حلقات</string>
+    <string name="watched">تم مشاهدتها</string>
+    <string name="shows">أعمال</string>
+    <string name="view_all">عرض الكل</string>
+    <string name="trending_today">رائج اليوم</string>
+    <string name="top_rated_shows">أعلى المسلسلات تقييماً</string>
+    <string name="upcoming_episodes">الحلقات القادمة</string>
+    <string name="my_shows">مسلسلاتي</string>
+    <string name="show_more">إظهار المزيد</string>
+    <string name="show_less">إظهار أقل</string>
+    <string name="overview">القصة</string>
+    <string name="cast">طاقم العمل</string>
+    <string name="upcoming_tab">المرتقبة</string>
+    <string name="watchlist_tab">قائمة المشاهدة</string>
+    <string name="in_hours">%d س</string>
+    <string name="reviews">المراجعات والتقييمات</string>
+    <string name="write_review">اكتب مراجعة...</string>
+    <string name="submit_review">إرسال</string>
+    <string name="social">المجتمع</string>
+    <string name="find_users">البحث عن مستخدمين</string>
+    <string name="follow">متابعة</string>
+    <string name="following">يتابع</string>
+    <string name="recent_activity">أحدث النشاطات</string>
+    <string name="no_users_found">لم يتم العثور على مستخدمين</string>
+    <string name="finished_shows">منتهي</string>
+
+    <!-- General -->
+    <string name="search_hint">ابحث عن أفلام أو مسلسلات...</string>
+</resources>
