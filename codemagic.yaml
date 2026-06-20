@@ -1,0 +1,20 @@
+workflows:
+  android-workflow:
+    name: Android Build
+    instance_type: mac_mini_m1
+    environment:
+      java: 17
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
+      - name: Create .env placeholders
+        script: |
+          cp .env.example .env || true
+      - name: Ensure permission on gradlew
+        script: chmod +x gradlew
+      - name: Build Android App (Debug)
+        script: |
+          ./gradlew assembleDebug
+    artifacts:
+      - app/build/outputs/**/*.apk
