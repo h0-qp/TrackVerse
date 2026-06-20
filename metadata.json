@@ -1,0 +1,6 @@
+{
+  "name": "TrackVerse",
+  "description": "Professional TV series and movie tracker allowing users to track shows, progress, and receive notifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

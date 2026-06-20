@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "539101776855",
+    "project_id": "trackverse-4e235",
+    "storage_bucket": "trackverse-4e235.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539101776855:android:e8cfb4c4b752a55d109992",
+        "android_client_info": {
+          "package_name": "com.aistudio.trackverse.abcx"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "539101776855-cdbjknncs677v1fm61vt5i3sv5thn6s7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.trackverse.abcx",
+            "certificate_hash": "d39e9a20a3dd660ad3e3a3284bf8490b3c119f4f"
+          }
+        },
+        {
+          "client_id": "539101776855-3pe34rb6pbkt4lb3pjus2rh73lur64ij.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDkSFWkzyeRoagAJdGGrERIKvOHq1GQQ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "539101776855-3pe34rb6pbkt4lb3pjus2rh73lur64ij.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
