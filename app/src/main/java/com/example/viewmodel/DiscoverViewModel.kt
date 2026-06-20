@@ -10,14 +10,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class DiscoverViewModel : ViewModel() {
-    private val _trendingMovies = MutableStateFlow<List<TmdbShow>>(emptyList())
-    val trendingMovies: StateFlow<List<TmdbShow>> = _trendingMovies
+    private val _trendingShows = MutableStateFlow<List<TmdbShow>>(emptyList())
+    val trendingShows: StateFlow<List<TmdbShow>> = _trendingShows
+
+    private val _popularShows = MutableStateFlow<List<TmdbShow>>(emptyList())
+    val popularShows: StateFlow<List<TmdbShow>> = _popularShows
+
+    private val _topRatedShows = MutableStateFlow<List<TmdbShow>>(emptyList())
+    val topRatedShows: StateFlow<List<TmdbShow>> = _topRatedShows
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
     
-    private val apiKey = BuildConfig.TMDB_API_KEY
-
     init {
         loadDiscover()
     }
@@ -26,13 +30,15 @@ class DiscoverViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                if (apiKey.isEmpty() || apiKey == "YOUR_TMDB_API_KEY") return@launch
-                
-                // You could add "Popular", "Airing Today" etc. We reuse the endpoints we have
-                val moviesResponse = ApiClient.tmdbService.getTrendingMovies(apiKey)
-                _trendingMovies.value = moviesResponse.results
+                val trending = ApiClient.tmdbService.getTrendingShows()
+                _trendingShows.value = trending.results
+
+                val popular = ApiClient.tmdbService.getPopularShows()
+                _popularShows.value = popular.results
+
+                val topRated = ApiClient.tmdbService.getTopRatedShows()
+                _topRatedShows.value = topRated.results
             } catch (e: Exception) {
-                // handle error
             } finally {
                 _isLoading.value = false
             }

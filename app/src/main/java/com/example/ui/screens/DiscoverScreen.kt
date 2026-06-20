@@ -14,12 +14,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.ui.theme.*
 import com.example.viewmodel.DiscoverViewModel
 
 @Composable
-fun DiscoverScreen(viewModel: DiscoverViewModel = viewModel()) {
-    val trendingMovies by viewModel.trendingMovies.collectAsState()
+fun DiscoverScreen(navController: NavController, viewModel: DiscoverViewModel = viewModel()) {
+    val trendingShows by viewModel.trendingShows.collectAsState()
+    val popularShows by viewModel.popularShows.collectAsState()
+    val topRatedShows by viewModel.topRatedShows.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
@@ -29,28 +32,51 @@ fun DiscoverScreen(viewModel: DiscoverViewModel = viewModel()) {
             .padding(16.dp)
             .windowInsetsPadding(WindowInsets.statusBars)
     ) {
-        Text("Discover", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text("Trending Movies", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = BlueHighlight)
+        androidx.compose.foundation.lazy.LazyColumn {
+            item {
+                Text("Discover", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Spacer(modifier = Modifier.height(16.dp))
             }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                items(trendingMovies) { show ->
-                    SearchResultItem(show) // Reusing the visual component from SearchScreen
+
+            if (isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = BlueHighlight)
+                    }
+                }
+            } else {
+                item {
+                    DiscoverSection("Trending Shows", trendingShows, navController)
+                }
+                item {
+                    DiscoverSection("Popular Shows", popularShows, navController)
+                }
+                item {
+                    DiscoverSection("Top Rated Shows", topRatedShows, navController)
                 }
             }
         }
     }
+}
+
+@Composable
+fun DiscoverSection(title: String, shows: List<com.example.network.TmdbShow>, navController: NavController) {
+    if (shows.isEmpty()) return
+    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+    Spacer(modifier = Modifier.height(16.dp))
+    androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        items(shows.size) { index ->
+            val show = shows[index]
+            SearchResultItem(
+                show = show,
+                modifier = Modifier
+                    .width(120.dp)
+                    .clickable {
+                        val isMovie = show.title != null
+                        navController.navigate("details/${show.id}/$isMovie")
+                    }
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(24.dp))
 }

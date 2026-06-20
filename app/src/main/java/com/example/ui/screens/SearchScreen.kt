@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.network.TmdbShow
 import com.example.ui.theme.*
@@ -28,7 +29,7 @@ import com.example.viewmodel.SearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
+fun SearchScreen(navController: NavController, viewModel: SearchViewModel = viewModel()) {
     val query by viewModel.query.collectAsState()
     val results by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -81,7 +82,10 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(results) { show ->
-                    SearchResultItem(show)
+                    SearchResultItem(show = show, modifier = Modifier.clickable {
+                        val isMovie = show.title != null
+                        navController.navigate("details/${show.id}/$isMovie")
+                    })
                 }
             }
         }
@@ -90,7 +94,7 @@ fun SearchScreen(viewModel: SearchViewModel = viewModel()) {
 
 @Composable
 fun SearchResultItem(show: TmdbShow, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.clickable { /* Navigate to Details */ }, horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()

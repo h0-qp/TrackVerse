@@ -41,7 +41,7 @@ fun MainScreen() {
                         NavigationBarItem(
                             icon = { Icon(screen.icon, contentDescription = screen.title) },
                             label = { Text(screen.title, fontWeight = FontWeight.Bold) },
-                            selected = currentRoute == screen.route,
+                            selected = currentRoute?.startsWith(screen.route) == true,
                             onClick = {
                                 navController.navigate(screen.route) {
                                     popUpTo(navController.graph.startDestinationId) { saveState = true }
@@ -67,11 +67,26 @@ fun MainScreen() {
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Home.route) { HomeScreen() }
-            composable(Screen.Discover.route) { DiscoverScreen() }
-            composable(Screen.Search.route) { SearchScreen() }
+            composable(Screen.Home.route) { HomeScreen(navController) }
+            composable(Screen.Discover.route) { DiscoverScreen(navController) }
+            composable(Screen.Search.route) { SearchScreen(navController) }
             composable(Screen.Statistics.route) { StatisticsScreen() }
             composable(Screen.Profile.route) { ProfileScreen() }
+            composable(
+                route = "details/{showId}/{isMovie}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("showId") { type = androidx.navigation.NavType.IntType },
+                    androidx.navigation.navArgument("isMovie") { type = androidx.navigation.NavType.BoolType }
+                )
+            ) { backStackEntry ->
+                val showId = backStackEntry.arguments?.getInt("showId") ?: 0
+                val isMovie = backStackEntry.arguments?.getBoolean("isMovie") ?: false
+                DetailsScreen(
+                    showId = showId,
+                    isMovie = isMovie,
+                    onBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }

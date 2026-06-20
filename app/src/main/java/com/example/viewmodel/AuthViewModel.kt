@@ -55,11 +55,50 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 val authResult = auth.signInWithCredential(credential).await()
                 _user.value = authResult.user
             } catch (e: Exception) {
-                _error.value = e.localizedMessage
+                // Return generic message if needed
+                _error.value = e.localizedMessage ?: "Google Sign-In failed"
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun signInWithEmail(email: String, pass: String) {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val result = auth.signInWithEmailAndPassword(email, pass).await()
+                _user.value = result.user
+            } catch (e: Exception) {
+                // If sign in fails, maybe they need to register? We only do simple.
+                try {
+                    val result = auth.createUserWithEmailAndPassword(email, pass).await()
+                    _user.value = result.user
+                } catch(e2: Exception) {
+                    _error.value = e2.localizedMessage ?: "Email Auth failed"
+                }
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun signInAsGuest() {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                val result = auth.signInAnonymously().await()
+                _user.value = result.user
+            } catch(e: Exception) {
+                _error.value = e.localizedMessage ?: "Guest Auth failed"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 
     fun signOut() {

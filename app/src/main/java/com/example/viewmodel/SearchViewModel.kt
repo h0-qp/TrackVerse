@@ -43,7 +43,7 @@ class SearchViewModel : ViewModel() {
         if (apiKey.isEmpty() || apiKey == "YOUR_TMDB_API_KEY") return
         _isLoading.value = true
         try {
-            val response = ApiClient.tmdbService.search(apiKey, query)
+            val response = ApiClient.tmdbService.search(query)
             // Filter to only include TV shows and Movies (not people, etc if we used multi)
             // But we used multi so we just take results.
             _searchResults.value = response.results

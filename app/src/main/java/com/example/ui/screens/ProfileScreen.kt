@@ -27,6 +27,9 @@ fun ProfileScreen(viewModel: AuthViewModel = viewModel()) {
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
 
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -66,13 +69,13 @@ fun ProfileScreen(viewModel: AuthViewModel = viewModel()) {
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = user?.displayName ?: "Unknown User",
+                text = user?.displayName ?: "Guest User",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
             Text(
-                text = user?.email ?: "",
+                text = user?.email ?: "Anonymous",
                 fontSize = 14.sp,
                 color = TextTertiary,
                 modifier = Modifier.padding(top = 8.dp)
@@ -94,15 +97,51 @@ fun ProfileScreen(viewModel: AuthViewModel = viewModel()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text("Sign in to sync your watchlist", fontSize = 16.sp, color = TextTertiary, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it; viewModel.clearError() },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it; viewModel.clearError() },
+                label = { Text("Password") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { viewModel.signInWithEmail(email, password) },
+                colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = TextPrimary),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("Login / Register with Email", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text("OR", fontSize = 14.sp, color = TextTertiary, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = { launcher.launch(viewModel.getGoogleSignInIntent()) },
                 colors = ButtonDefaults.buttonColors(containerColor = BlueHighlight, contentColor = TextPrimary),
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth().height(56.dp)
+                modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text("Sign in with Google", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Sign in with Google", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(onClick = { viewModel.signInAsGuest() }) {
+                Text("Continue as Guest", color = TextSecondary, fontSize = 14.sp)
             }
 
             if (error != null) {

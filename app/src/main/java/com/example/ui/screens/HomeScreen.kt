@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -21,13 +22,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.network.TmdbShow
 import com.example.ui.theme.*
 import com.example.viewmodel.HomeViewModel
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
+fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
     val trendingShows by viewModel.trendingShows.collectAsState()
     val topRatedShows by viewModel.topRatedShows.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -121,7 +123,10 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 AsyncImage(
                     model = "https://image.tmdb.org/t/p/w780${heroShow.backdropPath ?: heroShow.posterPath}",
                     contentDescription = heroShow.name ?: heroShow.title,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().clickable {
+                        val isMovie = heroShow.title != null
+                        navController.navigate("details/${heroShow.id}/$isMovie")
+                    },
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
                 // Gradient Overlay
@@ -181,7 +186,10 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                     AiRecItem(
                         title = show.name ?: show.title ?: "Unknown",
                         imageUrl = "https://image.tmdb.org/t/p/w342${show.posterPath}",
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).clickable {
+                            val isMovie = show.title != null
+                            navController.navigate("details/${show.id}/$isMovie")
+                        }
                     )
                 }
             } else if (isLoading) {

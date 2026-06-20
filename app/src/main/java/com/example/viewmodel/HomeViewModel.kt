@@ -40,10 +40,10 @@ class HomeViewModel : ViewModel() {
                     return@launch
                 }
 
-                val trendingResponse = ApiClient.tmdbService.getTrendingShows(apiKey)
+                val trendingResponse = ApiClient.tmdbService.getTrendingShows()
                 _trendingShows.value = trendingResponse.results
 
-                val topRatedResponse = ApiClient.tmdbService.getTopRatedShows(apiKey)
+                val topRatedResponse = ApiClient.tmdbService.getTopRatedShows()
                 _topRatedShows.value = topRatedResponse.results
 
             } catch (e: Exception) {

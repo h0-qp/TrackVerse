@@ -1,0 +1,1 @@
+When the user wants to download the APK, or after major changes, build the app using `gradle clean && gradle :app:assembleDebug`, then run `npx --yes node upload.js` (which uses curl to upload to gofile.io) to provide a direct download link for the user. Do not tell the user to use the export button if they specifically ask for an APK link.
