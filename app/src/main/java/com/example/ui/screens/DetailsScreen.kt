@@ -134,12 +134,16 @@ fun DetailsScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                val trackedItem = watchlist.find { it.id == show?.id }
+                val isInWatchlist = trackedItem != null
+                val watchedCount = watchlistViewModel.watchedEpisodesCount.collectAsState().value[show?.id] ?: 0
+
                 Button(
                     onClick = {
                         if (isInWatchlist) {
                             watchlistViewModel.removeFromWatchlist(show!!.id)
                         } else {
-                            watchlistViewModel.addToWatchlist(show!!)
+                            watchlistViewModel.addToWatchlist(show!!, isTracking = true)
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -150,10 +154,82 @@ fun DetailsScreen(
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) {
                     Text(
-                        if (isInWatchlist) "Remove from Watchlist" else "Add to Watchlist",
+                        if (isInWatchlist) "Unsubscribe / Remove" else "Subscribe to Series",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
+                }
+
+                if (isInWatchlist && !isMovie) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Tracking", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(SurfaceDark, RoundedCornerShape(16.dp))
+                            .border(1.dp, BorderStroke, RoundedCornerShape(16.dp))
+                            .padding(16.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Episodes Watched", fontSize = 14.sp, color = TextSecondary)
+                                Text("$watchedCount / ${show?.numberOfEpisodes ?: "?"}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = BlueHighlight)
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(
+                                    onClick = { if (watchedCount > 0) watchlistViewModel.updateWatchedEpisodes(show!!.id, watchedCount - 1) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = BgDark, contentColor = TextPrimary),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) {
+                                    Text("-1", fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Button(
+                                    onClick = { watchlistViewModel.updateWatchedEpisodes(show!!.id, watchedCount + 1) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = BlueHighlight, contentColor = TextPrimary),
+                                    modifier = Modifier.weight(1f).height(48.dp)
+                                ) {
+                                    Text("+1", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!isMovie && show?.nextEpisodeToAir != null) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text("Next Episode", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(BlueHighlight.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(show?.nextEpisodeToAir?.episodeNumber?.toString() ?: "", color = BlueHighlight, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(show?.nextEpisodeToAir?.name ?: "TBA", fontSize = 16.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                            Text("Airs: ${show?.nextEpisodeToAir?.airDate ?: "Unknown"}", fontSize = 12.sp, color = TextTertiary)
+                        }
+                    }
                 }
             }
         } else if (error != null) {

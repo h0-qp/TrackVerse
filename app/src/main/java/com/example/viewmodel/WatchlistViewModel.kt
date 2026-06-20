@@ -17,6 +17,10 @@ class WatchlistViewModel : ViewModel() {
     private val _watchlist = MutableStateFlow<List<TmdbShow>>(emptyList())
     val watchlist: StateFlow<List<TmdbShow>> = _watchlist
     
+    // Local tracking map for watched episodes
+    private val _watchedEpisodesCount = MutableStateFlow<Map<Int, Int>>(emptyMap())
+    val watchedEpisodesCount: StateFlow<Map<Int, Int>> = _watchedEpisodesCount
+
     fun loadWatchlist() {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
@@ -30,9 +34,18 @@ class WatchlistViewModel : ViewModel() {
                         posterPath = doc.getString("posterPath"),
                         backdropPath = doc.getString("backdropPath"),
                         voteAverage = doc.getDouble("voteAverage"),
-                        overview = doc.getString("overview")
+                        overview = doc.getString("overview"),
+                        numberOfEpisodes = doc.getLong("numberOfEpisodes")?.toInt(),
+                        numberOfSeasons = doc.getLong("numberOfSeasons")?.toInt()
                     )
                 }
+                
+                val counts = snapshot.documents.associate { doc ->
+                    val showId = doc.getLong("id")?.toInt() ?: 0
+                    val count = doc.getLong("watchedEpisodes")?.toInt() ?: 0
+                    showId to count
+                }
+                _watchedEpisodesCount.value = counts
                 _watchlist.value = items
             } catch (e: Exception) {
                 // handle error
@@ -40,7 +53,7 @@ class WatchlistViewModel : ViewModel() {
         }
     }
 
-    fun addToWatchlist(show: TmdbShow) {
+    fun addToWatchlist(show: TmdbShow, isTracking: Boolean = true) {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
             try {
@@ -51,12 +64,30 @@ class WatchlistViewModel : ViewModel() {
                     "posterPath" to show.posterPath,
                     "backdropPath" to show.backdropPath,
                     "voteAverage" to show.voteAverage,
-                    "overview" to show.overview
+                    "overview" to show.overview,
+                    "numberOfEpisodes" to show.numberOfEpisodes,
+                    "numberOfSeasons" to show.numberOfSeasons,
+                    "isTracking" to isTracking,
+                    "watchedEpisodes" to (_watchedEpisodesCount.value[show.id] ?: 0)
                 )
                 db.collection("users").document(user.uid)
                     .collection("watchlist").document(show.id.toString())
                     .set(showMap).await()
                 loadWatchlist() // Refresh
+            } catch (e: Exception) {
+                // handle error
+            }
+        }
+    }
+
+    fun updateWatchedEpisodes(showId: Int, count: Int) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                db.collection("users").document(user.uid)
+                  .collection("watchlist").document(showId.toString())
+                  .update("watchedEpisodes", count).await()
+                loadWatchlist()
             } catch (e: Exception) {
                 // handle error
             }

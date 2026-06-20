@@ -30,6 +30,8 @@ import com.example.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
+    val authViewModel: com.example.viewmodel.AuthViewModel = viewModel()
+    val user by authViewModel.user.collectAsState()
     val trendingShows by viewModel.trendingShows.collectAsState()
     val topRatedShows by viewModel.topRatedShows.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -57,15 +59,18 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     color = BlueHighlight,
                     letterSpacing = 2.sp
                 )
-                Text(
-                    text = "Hello, Alex",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                if (user == null || user?.isAnonymous == true) {
+                    Text(
+                        text = "Hello, User",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextPrimary,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
             // Profile image
+            val profileImg = user?.photoUrl?.toString() ?: "https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.displayName ?: "User"}"
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -74,7 +79,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     .border(1.dp, BorderStroke, CircleShape)
             ) {
                 AsyncImage(
-                    model = "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
+                    model = profileImg,
                     contentDescription = "Profile",
                     modifier = Modifier.fillMaxSize()
                 )

@@ -71,7 +71,8 @@ fun MainScreen() {
             composable(Screen.Discover.route) { DiscoverScreen(navController) }
             composable(Screen.Search.route) { SearchScreen(navController) }
             composable(Screen.Statistics.route) { StatisticsScreen() }
-            composable(Screen.Profile.route) { ProfileScreen() }
+            composable(Screen.Profile.route) { ProfileScreen(navController = navController) }
+            composable("settings") { SettingsScreen(navController = navController) }
             composable(
                 route = "details/{showId}/{isMovie}",
                 arguments = listOf(
