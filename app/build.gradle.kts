@@ -1,3 +1,6 @@
+import java.net.URL
+import java.net.HttpURLConnection
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -128,3 +131,32 @@ dependencies {
   "ksp"(libs.moshi.kotlin.codegen)
 }
 
+tasks.register("uploadApk") {
+    dependsOn("assembleDebug")
+    doLast {
+        val apkFile = layout.buildDirectory.file("outputs/apk/debug/app-debug.apk").get().asFile
+        if (!apkFile.exists()) {
+            println("APK not found!")
+            return@doLast
+        }
+        try {
+            val url = URL("https://transfer.sh/TrackVerse.apk")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "PUT"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "application/vnd.android.package-archive")
+
+            apkFile.inputStream().use { it.copyTo(connection.outputStream) }
+
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                println("UPLOAD_LINK: $response")
+            } else {
+                println("Upload failed with code: $responseCode")
+            }
+        } catch (e: Exception) {
+            println("Upload exception: ${e.message}")
+        }
+    }
+}
