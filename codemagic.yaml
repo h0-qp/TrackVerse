@@ -16,7 +16,7 @@ workflows:
       - name: Build Android App (Debug)
         script: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-              gradle wrapper || curl -o gradle/wrapper/gradle-wrapper.jar -L https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
+              gradle wrapper --gradle-version 9.3.1
           fi
           ./gradlew assembleDebug
     artifacts:
