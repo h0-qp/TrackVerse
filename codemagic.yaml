@@ -15,6 +15,9 @@ workflows:
         script: chmod +x gradlew
       - name: Build Android App (Debug)
         script: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+              gradle wrapper || curl -o gradle/wrapper/gradle-wrapper.jar -L https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
+          fi
           ./gradlew assembleDebug
     artifacts:
       - app/build/outputs/**/*.apk
