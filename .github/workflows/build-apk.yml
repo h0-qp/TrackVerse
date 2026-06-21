@@ -1,0 +1,33 @@
+name: Build and Release Kotlin APK
+
+on:
+  push:
+    tags:
+      - 'v*' # يشتغل التلقائي لما تسوي ريليس بـ تاغ مثل v1.0.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Change wrapper permissions
+        run: chmod +x gradlew
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Find and Upload APK to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app/build/outputs/apk/release/*.apk # هذا السطر يبحث عن أي ملف APK تم بناؤه ويرفعه فوراً
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
