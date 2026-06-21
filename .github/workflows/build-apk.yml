@@ -1,4 +1,4 @@
-name: Build and Release Kotlin APK
+1name: Build and Release Kotlin APK
 
 on:
   push:
@@ -18,20 +18,11 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v3
-
-      - name: Setup Gradle
+      - name: Install Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build Release APK
-        run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleRelease
-          else
-            gradle assembleRelease
-          fi
+      - name: Build Release APK using Global Gradle
+        run: gradle assembleRelease --no-daemon
 
       - name: Find and Upload APK to Release
         uses: softprops/action-gh-release@v2
