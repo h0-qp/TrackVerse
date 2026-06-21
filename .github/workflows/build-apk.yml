@@ -1,4 +1,4 @@
-1name: Build and Release Kotlin APK
+name: Build and Release Kotlin APK
 
 on:
   push:
