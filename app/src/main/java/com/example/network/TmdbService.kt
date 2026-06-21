@@ -38,4 +38,14 @@ interface TmdbService {
         @retrofit2.http.Path("movie_id") id: Int,
         @Query("append_to_response") appendToResponse: String = "credits"
     ): TmdbShow
+
+    @GET("3/person/{person_id}")
+    suspend fun getPersonDetails(
+        @retrofit2.http.Path("person_id") id: Int
+    ): TmdbPerson
+
+    @GET("3/person/{person_id}/combined_credits")
+    suspend fun getPersonCredits(
+        @retrofit2.http.Path("person_id") id: Int
+    ): TmdbPersonCredits
 }

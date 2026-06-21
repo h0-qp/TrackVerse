@@ -35,6 +35,9 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel = view
     val query by viewModel.query.collectAsState()
     val results by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
     Column(
         modifier = Modifier
@@ -122,13 +125,13 @@ fun SearchResultItem(show: TmdbShow, modifier: Modifier = Modifier) {
 
             AsyncImage(
                 model = "https://image.tmdb.org/t/p/w342${show.posterPath}",
-                contentDescription = show.name ?: show.title,
+                contentDescription = show.displayTitle,
                 modifier = imgModifier,
                 contentScale = ContentScale.Crop
             )
         }
         Text(
-            text = show.name ?: show.title ?: "Unknown",
+            text = show.displayTitle,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             color = TextSecondary,

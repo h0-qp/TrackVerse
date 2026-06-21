@@ -1,28 +1,41 @@
 package com.example.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.AppDatabase
+import com.example.data.WatchlistEntity
 import com.example.network.TmdbShow
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class WatchlistViewModel : ViewModel() {
+class WatchlistViewModel(application: Application) : AndroidViewModel(application) {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val appDb = AppDatabase.getDatabase(application)
     
     private val _watchlist = MutableStateFlow<List<TmdbShow>>(emptyList())
-    val watchlist: StateFlow<List<TmdbShow>> = _watchlist
+    val watchlist: StateFlow<List<TmdbShow>> = _watchlist.asStateFlow()
     
-    // Local tracking map for watched episodes
     private val _watchedEpisodesCount = MutableStateFlow<Map<Int, Int>>(emptyMap())
-    val watchedEpisodesCount: StateFlow<Map<Int, Int>> = _watchedEpisodesCount
+    val watchedEpisodesCount: StateFlow<Map<Int, Int>> = _watchedEpisodesCount.asStateFlow()
 
     private val _watchedEpisodesList = MutableStateFlow<Map<Int, List<Int>>>(emptyMap())
-    val watchedEpisodesList: StateFlow<Map<Int, List<Int>>> = _watchedEpisodesList
+    val watchedEpisodesList: StateFlow<Map<Int, List<Int>>> = _watchedEpisodesList.asStateFlow()
+
+    init {
+        // Collect from local DB for offline access
+        viewModelScope.launch {
+            appDb.watchlistDao().getAllWatchlistItems().collect { entities ->
+                _watchlist.value = entities.map { it.toTmdbShow() }
+            }
+        }
+    }
 
     fun loadWatchlist() {
         val user = auth.currentUser ?: return
@@ -67,11 +80,14 @@ class WatchlistViewModel : ViewModel() {
                     val watchedList = (doc.get("watchedEpisodeIds") as? List<*>)?.mapNotNull { (it as? Long)?.toInt() } ?: emptyList()
                     showId to watchedList
                 }
+                
                 _watchedEpisodesCount.value = counts
                 _watchedEpisodesList.value = lists
-                _watchlist.value = items
+                
+                // Cache locally
+                appDb.watchlistDao().insertItems(items.map { WatchlistEntity.fromTmdbShow(it, it.title != null) })
             } catch (e: Exception) {
-                // handle error
+                // Ignore error, local DB collection provides offline data
             }
         }
     }
@@ -107,13 +123,15 @@ class WatchlistViewModel : ViewModel() {
                     .collection("watchlist").document(show.id.toString())
                     .set(showMap).await()
                     
+                appDb.watchlistDao().insertItem(WatchlistEntity.fromTmdbShow(show, show.title != null))
+
                 // Log activity
                 val act = hashMapOf(
                     "userId" to user.uid,
                     "userName" to (user.displayName ?: user.email?.substringBefore("@") ?: "User"),
                     "actionType" to if (isTracking) "ADDED_WATCHLIST" else "REMOVED_WATCHLIST",
                     "showId" to show.id,
-                    "showName" to (show.name ?: show.title ?: "Show"),
+                    "showName" to show.displayTitle,
                     "details" to "",
                     "timestamp" to System.currentTimeMillis()
                 )
@@ -194,6 +212,7 @@ class WatchlistViewModel : ViewModel() {
                 db.collection("users").document(user.uid)
                   .collection("watchlist").document(showId.toString())
                   .delete().await()
+                appDb.watchlistDao().deleteItem(showId)
                 loadWatchlist()
             } catch (e: Exception) {
                 // handle error

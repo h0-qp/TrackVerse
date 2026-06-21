@@ -121,21 +121,10 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                             .clip(RoundedCornerShape(8.dp)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        var imgModifierUpcoming = Modifier.width(90.dp).fillMaxHeight()
-                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-                            with(sharedTransitionScope) {
-                                imgModifierUpcoming = imgModifierUpcoming.sharedElement(
-                                    state = rememberSharedContentState(key = "image-${show.id}"),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    boundsTransform = { _, _ -> tween(durationMillis = 500) }
-                                )
-                            }
-                        }
-
                         AsyncImage(
                             model = "https://image.tmdb.org/t/p/w200${show.posterPath ?: show.backdropPath}",
                             contentDescription = null,
-                            modifier = imgModifierUpcoming,
+                            modifier = Modifier.width(90.dp).fillMaxHeight(),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.width(16.dp))
@@ -148,7 +137,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                     .border(1.dp, Color.White, RoundedCornerShape(16.dp))
                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                             ) {
-                                Text("< ${show.name ?: show.title?.uppercase()}", color = Color.White, fontSize = 10.sp)
+                                Text("< ${show.displayTitle.uppercase()}", color = Color.White, fontSize = 10.sp)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -217,21 +206,10 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                             .clip(RoundedCornerShape(8.dp)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        var imgModifierActive = Modifier.width(90.dp).fillMaxHeight()
-                        if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-                            with(sharedTransitionScope) {
-                                imgModifierActive = imgModifierActive.sharedElement(
-                                    state = rememberSharedContentState(key = "image-${show.id}"),
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    boundsTransform = { _, _ -> tween(durationMillis = 500) }
-                                )
-                            }
-                        }
-
                         AsyncImage(
                             model = "https://image.tmdb.org/t/p/w200${show.posterPath ?: show.backdropPath}",
                             contentDescription = null,
-                            modifier = imgModifierActive,
+                            modifier = Modifier.width(90.dp).fillMaxHeight(),
                             contentScale = ContentScale.Crop
                         )
                         Spacer(modifier = Modifier.width(16.dp))
@@ -244,7 +222,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                     .border(1.dp, Color.White, RoundedCornerShape(16.dp))
                                     .padding(horizontal = 8.dp, vertical = 2.dp)
                             ) {
-                                Text("< ${show.name ?: show.title?.uppercase()}", color = Color.White, fontSize = 10.sp)
+                                Text("< ${show.displayTitle.uppercase()}", color = Color.White, fontSize = 10.sp)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             val seasonStr = episode?.seasonNumber?.let { String.format("%02d", it) } ?: "01"
@@ -256,7 +234,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(episode?.name ?: show.title ?: "", color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(episode?.name ?: show.displayTitle, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         val isWatched = episode?.id?.let { epId -> watchedList[show.id]?.contains(epId) } == true
                         Box(
@@ -329,7 +307,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                         .border(1.dp, Color.White, RoundedCornerShape(16.dp))
                                         .padding(horizontal = 8.dp, vertical = 2.dp)
                                 ) {
-                                    Text("< ${show.name ?: show.title?.uppercase()}", color = Color.White, fontSize = 10.sp)
+                                    Text("< ${show.displayTitle.uppercase()}", color = Color.White, fontSize = 10.sp)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(

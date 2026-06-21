@@ -17,7 +17,13 @@ object ApiClient {
         .build()
 
     private val authInterceptor = Interceptor { chain ->
-        val request = chain.request().newBuilder()
+        val originalRequest = chain.request()
+        val url = originalRequest.url.newBuilder()
+            .addQueryParameter("language", "ar")
+            .build()
+            
+        val request = originalRequest.newBuilder()
+            .url(url)
             .addHeader("Authorization", "Bearer ${BuildConfig.TMDB_API_KEY}")
             .addHeader("accept", "application/json")
             .build()

@@ -40,6 +40,7 @@ fun DetailsScreen(
     showId: Int,
     isMovie: Boolean,
     onBack: () -> Unit,
+    onPersonClick: (Int) -> Unit = {},
     detailsViewModel: DetailsViewModel = viewModel(),
     watchlistViewModel: WatchlistViewModel = viewModel(),
     reviewViewModel: ReviewViewModel = viewModel()
@@ -53,7 +54,7 @@ fun DetailsScreen(
     val averageRating by reviewViewModel.averageRating.collectAsState()
 
     val scrollState = rememberScrollState()
-    
+
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
@@ -95,7 +96,7 @@ fun DetailsScreen(
 
                 AsyncImage(
                     model = "https://image.tmdb.org/t/p/w780${show?.posterPath}",
-                    contentDescription = show?.name ?: show?.title,
+                    contentDescription = show?.displayTitle,
                     modifier = imgModifier,
                     contentScale = ContentScale.Crop
                 )
@@ -132,7 +133,7 @@ fun DetailsScreen(
         if (show != null) {
             Column(modifier = Modifier.padding(24.dp).background(MaterialTheme.colorScheme.background)) {
                 Text(
-                    text = show?.name ?: show?.title ?: "Unknown",
+                    text = show?.displayTitle ?: "Unknown",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
@@ -175,7 +176,9 @@ fun DetailsScreen(
                     ) {
                         items(show?.credits?.cast?.take(15) ?: emptyList()) { actor ->
                             Column(
-                                modifier = Modifier.width(80.dp),
+                                modifier = Modifier
+                                    .width(80.dp)
+                                    .clickable { onPersonClick(actor.id) },
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 AsyncImage(

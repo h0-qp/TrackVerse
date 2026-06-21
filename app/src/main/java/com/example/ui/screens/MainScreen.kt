@@ -1,9 +1,14 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -40,12 +45,19 @@ fun MainScreen() {
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
-                    Surface(color = NavBgDark, shadowElevation = 0.dp) {
-                        HorizontalDivider(color = BorderStroke, thickness = 1.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(Color(0xFF141A29).copy(alpha = 0.85f))
+                            .border(1.dp, Color.White.copy(alpha=0.1f), RoundedCornerShape(24.dp))
+                    ) {
                         NavigationBar(
-                            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                            containerColor = Color.Transparent,
                             contentColor = MaterialTheme.colorScheme.primary,
-                            tonalElevation = 0.dp
+                            tonalElevation = 0.dp,
+                            windowInsets = WindowInsets(0,0,0,0) // To remove default navbar padding in floating mode
                         ) {
                             val navBackStackEntry by navController.currentBackStackEntryAsState()
                             val currentRoute = navBackStackEntry?.destination?.route
@@ -67,7 +79,7 @@ fun MainScreen() {
                                         selectedTextColor = MaterialTheme.colorScheme.primary,
                                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        indicatorColor = androidx.compose.ui.graphics.Color.Transparent
+                                        indicatorColor = Color.Transparent
                                     )
                                 )
                             }
@@ -78,42 +90,28 @@ fun MainScreen() {
                 NavHost(
                     navController = navController,
                     startDestination = Screen.Home.route,
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding() / 2) // Less padding since it's floating
                 ) {
                     composable(Screen.Home.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                            HomeScreen(navController) 
-                        }
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { HomeScreen(navController) }
                     }
                     composable(Screen.Discover.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                            DiscoverScreen(navController) 
-                        }
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { DiscoverScreen(navController) }
                     }
                     composable(Screen.Search.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                            SearchScreen(navController) 
-                        }
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SearchScreen(navController) }
                     }
                     composable(Screen.Social.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                            SocialScreen() 
-                        }
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SocialScreen() }
                     }
                     composable(Screen.Statistics.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                            StatisticsScreen(navController) 
-                        }
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { StatisticsScreen(navController) }
                     }
                     composable(Screen.Profile.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                            ProfileScreen(navController = navController) 
-                        }
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { ProfileScreen(navController = navController) }
                     }
                     composable("settings") { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
-                            SettingsScreen(navController = navController) 
-                        }
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SettingsScreen(navController = navController) }
                     }
                     composable(
                         route = "details/{showId}/{isMovie}",
@@ -128,7 +126,27 @@ fun MainScreen() {
                             DetailsScreen(
                                 showId = showId,
                                 isMovie = isMovie,
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onPersonClick = { personId ->
+                                    navController.navigate("actor/$personId")
+                                }
+                            )
+                        }
+                    }
+                    composable(
+                        route = "actor/{personId}",
+                        arguments = listOf(
+                            androidx.navigation.navArgument("personId") { type = androidx.navigation.NavType.IntType }
+                        )
+                    ) { backStackEntry ->
+                        val personId = backStackEntry.arguments?.getInt("personId") ?: 0
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
+                            PersonScreen(
+                                personId = personId,
+                                onBack = { navController.popBackStack() },
+                                onShowClick = { showId, isMovie ->
+                                    navController.navigate("details/$showId/$isMovie")
+                                }
                             )
                         }
                     }
@@ -137,3 +155,4 @@ fun MainScreen() {
         }
     }
 }
+

@@ -44,11 +44,11 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     
-    val watchlist by watchlistViewModel.watchlist.collectAsState()
-    val watchedCounts by watchlistViewModel.watchedEpisodesCount.collectAsState()
-
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+    
+    val watchlist by watchlistViewModel.watchlist.collectAsState()
+    val watchedCounts by watchlistViewModel.watchedEpisodesCount.collectAsState()
 
     LaunchedEffect(user) {
         watchlistViewModel.loadWatchlist()
@@ -162,7 +162,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
 
                 AsyncImage(
                     model = "https://image.tmdb.org/t/p/w780${heroShow.backdropPath ?: heroShow.posterPath}",
-                    contentDescription = heroShow.name ?: heroShow.title,
+                    contentDescription = heroShow.displayTitle,
                     modifier = imgModifier,
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
@@ -190,7 +190,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     ) {
                         Column {
                             Text("★ ${heroShow.voteAverage?.toString()?.take(3) ?: stringResource(R.string.not_available)}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BlueLight)
-                            Text(heroShow.name ?: heroShow.title ?: "Unknown", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Text(heroShow.displayTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                         }
                         Box(
                             modifier = Modifier
@@ -222,7 +222,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                 displays.forEach { show ->
                     AiRecItem(
                         id = show.id,
-                        title = show.name ?: show.title ?: "Unknown",
+                        title = show.displayTitle,
                         imageUrl = "https://image.tmdb.org/t/p/w342${show.posterPath}",
                         modifier = Modifier.weight(1f).clickable {
                             val isMovie = show.title != null
