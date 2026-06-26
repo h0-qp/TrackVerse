@@ -18,8 +18,13 @@ object ApiClient {
 
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
+        val currentLang = java.util.Locale.getDefault().language
+        val langParam = if (currentLang == "ar") "ar-SA" else "en-US"
+        val imageLangParam = if (currentLang == "ar") "ar,en,null" else "en,null"
+        
         val url = originalRequest.url.newBuilder()
-            .addQueryParameter("language", "ar")
+            .addQueryParameter("language", langParam)
+            .addQueryParameter("include_image_language", imageLangParam)
             .build()
             
         val request = originalRequest.newBuilder()

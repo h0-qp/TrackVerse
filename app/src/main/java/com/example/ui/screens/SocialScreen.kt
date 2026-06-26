@@ -116,7 +116,11 @@ fun SocialScreen(socialViewModel: SocialViewModel = viewModel()) {
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 items(feed) { act ->
-                    val actionStr = if (act.actionType == "ADDED_WATCHLIST") "added to watchlist" else "watched"
+                    val actionStr = when (act.actionType) {
+                        "ADDED_WATCHLIST" -> stringResource(R.string.added_to_watchlist)
+                        "REVIEWED" -> stringResource(R.string.reviewed)
+                        else -> stringResource(R.string.watched_social)
+                    }
                     val sdf = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
                     val dateStr = sdf.format(Date(act.timestamp))
 

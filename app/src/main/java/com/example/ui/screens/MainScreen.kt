@@ -23,10 +23,42 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import com.example.ui.screens.LocalAnimatedVisibilityScope
 import com.example.ui.screens.LocalSharedTransitionScope
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun MainScreen() {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                // Permission accepted
+            } else {
+                // Permission denied
+            }
+        }
+    )
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val isGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            
+            if (!isGranted) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
     val navController = rememberNavController()
     
     val items = listOf(
@@ -114,18 +146,25 @@ fun MainScreen() {
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SettingsScreen(navController = navController) }
                     }
                     composable(
-                        route = "details/{showId}/{isMovie}",
+                        route = "details/{showId}/{isMovie}?source={source}",
                         arguments = listOf(
                             androidx.navigation.navArgument("showId") { type = androidx.navigation.NavType.IntType },
-                            androidx.navigation.navArgument("isMovie") { type = androidx.navigation.NavType.BoolType }
+                            androidx.navigation.navArgument("isMovie") { type = androidx.navigation.NavType.BoolType },
+                            androidx.navigation.navArgument("source") { 
+                                type = androidx.navigation.NavType.StringType
+                                nullable = true
+                                defaultValue = ""
+                            }
                         )
                     ) { backStackEntry ->
                         val showId = backStackEntry.arguments?.getInt("showId") ?: 0
                         val isMovie = backStackEntry.arguments?.getBoolean("isMovie") ?: false
+                        val source = backStackEntry.arguments?.getString("source") ?: ""
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) {
                             DetailsScreen(
                                 showId = showId,
                                 isMovie = isMovie,
+                                sourceKey = source,
                                 onBack = { navController.popBackStack() },
                                 onPersonClick = { personId ->
                                     navController.navigate("actor/$personId")

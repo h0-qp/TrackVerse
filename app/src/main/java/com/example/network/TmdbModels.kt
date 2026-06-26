@@ -41,6 +41,20 @@ data class TmdbCast(
 )
 
 @JsonClass(generateAdapter = true)
+data class TmdbVideo(
+    @Json(name = "id") val id: String,
+    @Json(name = "name") val name: String,
+    @Json(name = "key") val key: String,
+    @Json(name = "site") val site: String,
+    @Json(name = "type") val type: String
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbVideosResponse(
+    @Json(name = "results") val results: List<TmdbVideo>?
+)
+
+@JsonClass(generateAdapter = true)
 data class TmdbCredits(
     @Json(name = "cast") val cast: List<TmdbCast>?
 )
@@ -61,7 +75,8 @@ data class TmdbShow(
     @Json(name = "status") val status: String? = null,
     @Json(name = "next_episode_to_air") val nextEpisodeToAir: TmdbEpisode? = null,
     @Json(name = "seasons") val seasons: List<TmdbSeason>? = null,
-    @Json(name = "credits") val credits: TmdbCredits? = null
+    @Json(name = "credits") val credits: TmdbCredits? = null,
+    @Json(name = "videos") val videos: TmdbVideosResponse? = null
 ) {
     val displayTitle: String
         get() = originalName ?: originalTitle ?: name ?: title ?: "Unknown"

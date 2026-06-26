@@ -44,6 +44,7 @@ class SocialViewModel : ViewModel() {
     init {
         saveUserProfile()
         loadFollowing()
+        loadFeed()
     }
 
     private fun saveUserProfile() {
@@ -85,9 +86,6 @@ class SocialViewModel : ViewModel() {
                 val snap = db.collection("users").document(uid).collection("following").get().await()
                 val followingIds = snap.documents.map { it.id }
                 _following.value = followingIds
-                if (followingIds.isNotEmpty()) {
-                    loadFeed(followingIds)
-                }
             } catch (e: Exception) {}
         }
     }
@@ -108,15 +106,10 @@ class SocialViewModel : ViewModel() {
         }
     }
 
-    private fun loadFeed(followingIds: List<String>) {
+    fun loadFeed() {
         viewModelScope.launch {
             try {
-                // Firestore 'in' query supports up to 10. For simplicity, just pick first 10
-                val idsToQuery = followingIds.take(10)
-                if (idsToQuery.isEmpty()) return@launch
-                
                 val snap = db.collection("activity")
-                    .whereIn("userId", idsToQuery)
                     .orderBy("timestamp", Query.Direction.DESCENDING)
                     .limit(50)
                     .get().await()
@@ -142,6 +135,7 @@ class SocialViewModel : ViewModel() {
                     details = details
                 )
                 db.collection("activity").add(act).await()
+                loadFeed()
             } catch (e: Exception) {}
         }
     }

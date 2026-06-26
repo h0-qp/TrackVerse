@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +33,7 @@ import com.example.ui.theme.*
 import com.example.viewmodel.DetailsViewModel
 import com.example.viewmodel.WatchlistViewModel
 import com.example.viewmodel.ReviewViewModel
+import com.example.viewmodel.SocialViewModel
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 
@@ -39,11 +42,13 @@ import androidx.compose.material.icons.outlined.Star
 fun DetailsScreen(
     showId: Int,
     isMovie: Boolean,
+    sourceKey: String = "",
     onBack: () -> Unit,
     onPersonClick: (Int) -> Unit = {},
     detailsViewModel: DetailsViewModel = viewModel(),
     watchlistViewModel: WatchlistViewModel = viewModel(),
-    reviewViewModel: ReviewViewModel = viewModel()
+    reviewViewModel: ReviewViewModel = viewModel(),
+    socialViewModel: SocialViewModel = viewModel()
 ) {
     val show by detailsViewModel.show.collectAsState()
     val isLoading by detailsViewModel.isLoading.collectAsState()
@@ -51,6 +56,7 @@ fun DetailsScreen(
     val watchlist by watchlistViewModel.watchlist.collectAsState()
     
     val reviews by reviewViewModel.reviews.collectAsState()
+    val userReview by reviewViewModel.userReview.collectAsState()
     val averageRating by reviewViewModel.averageRating.collectAsState()
 
     val scrollState = rememberScrollState()
@@ -60,7 +66,6 @@ fun DetailsScreen(
 
     LaunchedEffect(showId) {
         detailsViewModel.loadDetails(showId, isMovie)
-        watchlistViewModel.loadWatchlist()
         reviewViewModel.loadReviews(showId, isMovie)
     }
 
@@ -85,9 +90,10 @@ fun DetailsScreen(
             ) {
                 var imgModifier = Modifier.fillMaxSize()
                 if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                    val finalKey = if (sourceKey.isNotEmpty()) "image-$showId-$sourceKey" else "image-$showId"
                     with(sharedTransitionScope) {
                         imgModifier = imgModifier.sharedElement(
-                            state = rememberSharedContentState(key = "image-$showId"),
+                            state = rememberSharedContentState(key = finalKey),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> tween(durationMillis = 500) }
                         )
@@ -111,16 +117,42 @@ fun DetailsScreen(
                     )
             )
 
-            // Back button
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White,
+            // Back button and Top Bar actions
+            Row(
                 modifier = Modifier
-                    .padding(top = 48.dp, start = 24.dp)
-                    .size(32.dp)
-                    .clickable { onBack() }
-            )
+                    .fillMaxWidth()
+                    .padding(top = 48.dp, start = 24.dp, end = 24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clickable { onBack() }
+                )
+                
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val shareTitle = show?.displayTitle ?: "this"
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Share",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable {
+                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, shareTitle)
+                                val typeString = if (isMovie) "movie" else "tv"
+                                putExtra(android.content.Intent.EXTRA_TEXT, "Check out $shareTitle on TMDB! https://www.themoviedb.org/$typeString/${show?.id}")
+                            }
+                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share via"))
+                        }
+                )
+            }
 
             if (isLoading) {
                 CircularProgressIndicator(
@@ -157,15 +189,35 @@ fun DetailsScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-                Text(androidx.compose.ui.res.stringResource(com.example.R.string.overview), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = show?.overview ?: "No overview available.",
-                    fontSize = 14.sp,
-                    color = TextSecondary,
-                    lineHeight = 22.sp
-                )
+                if (!show?.overview.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.example.R.string.overview), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = show?.overview ?: "",
+                        fontSize = 14.sp,
+                        color = TextSecondary,
+                        lineHeight = 22.sp
+                    )
+                }
+
+                val firstTrailer = show?.videos?.results?.firstOrNull { it.site == "YouTube" && it.type == "Trailer" }
+                if (firstTrailer != null) {
+                    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            uriHandler.openUri("https://www.youtube.com/watch?v=${firstTrailer.key}")
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = BlueLight.copy(alpha = 0.2f), contentColor = BlueLight),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp)
+                    ) {
+                        androidx.compose.material3.Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Play Trailer", modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.example.R.string.watch_trailer) ?: "Watch Trailer", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                }
 
                 if (!show?.credits?.cast.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -220,6 +272,7 @@ fun DetailsScreen(
                 val context = androidx.compose.ui.platform.LocalContext.current
                 
                 var playAnimation by remember { mutableStateOf(false) }
+                var showReviewDialog by remember { mutableStateOf(false) }
                 val sizeScale by androidx.compose.animation.core.animateFloatAsState(
                     targetValue = if (playAnimation) 1.2f else 1f,
                     animationSpec = androidx.compose.animation.core.spring(
@@ -239,6 +292,9 @@ fun DetailsScreen(
                             } else {
                                 playAnimation = true
                                 watchlistViewModel.addToWatchlist(show!!, isTracking = true)
+                                if (isMovie) {
+                                    showReviewDialog = true
+                                }
                             }
                         }
                     },
@@ -249,10 +305,81 @@ fun DetailsScreen(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth().height(56.dp).graphicsLayer(scaleX = sizeScale, scaleY = sizeScale)
                 ) {
+                    val textRes = if (isMovie) {
+                        if (isInWatchlistCheck) com.example.R.string.remove_watched_movie else com.example.R.string.watch_movie
+                    } else {
+                        if (isInWatchlistCheck) com.example.R.string.unsubscribe_remove else com.example.R.string.subscribe_series
+                    }
                     Text(
-                        if (isInWatchlistCheck) androidx.compose.ui.res.stringResource(com.example.R.string.unsubscribe_remove) else androidx.compose.ui.res.stringResource(com.example.R.string.subscribe_series),
+                        androidx.compose.ui.res.stringResource(textRes),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
+                    )
+                }
+
+                if (showReviewDialog) {
+                    var dialogRating by remember { mutableStateOf(userReview?.rating ?: 0f) }
+                    var dialogText by remember { mutableStateOf(userReview?.text ?: "") }
+                    AlertDialog(
+                        onDismissRequest = { showReviewDialog = false },
+                        title = { Text("Write a Review (Optional)", color = TextPrimary) },
+                        text = {
+                            Column {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    for (i in 1..5) {
+                                        val icon = if (i <= dialogRating) Icons.Filled.Star else Icons.Outlined.Star
+                                        val tint = if (i <= dialogRating) Color(0xFFFFD700) else TextTertiary
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = "Rate $i",
+                                            tint = tint,
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clickable { dialogRating = i.toFloat() }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                OutlinedTextField(
+                                    value = dialogText,
+                                    onValueChange = { dialogText = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text("What did you think?", color = TextSecondary) },
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = BlueHighlight,
+                                        unfocusedBorderColor = TextTertiary,
+                                        focusedTextColor = TextPrimary,
+                                        unfocusedTextColor = TextPrimary,
+                                        cursorColor = BlueHighlight
+                                    ),
+                                    maxLines = 4
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    if (dialogRating > 0f) {
+                                        reviewViewModel.submitReview(showId, isMovie, dialogRating, dialogText)
+                                        socialViewModel.publishActivity("REVIEWED", showId, show?.title ?: show?.name ?: "Unknown", "Rated $dialogRating/5: $dialogText")
+                                    }
+                                    showReviewDialog = false
+                                },
+                                content = { Text("Submit", color = BlueHighlight) }
+                            )
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showReviewDialog = false },
+                                content = { Text("Cancel", color = TextSecondary) }
+                            )
+                        },
+                        containerColor = SurfaceDark,
+                        titleContentColor = TextPrimary,
+                        textContentColor = TextPrimary
                     )
                 }
 
@@ -264,6 +391,24 @@ fun DetailsScreen(
                     val seasonDetailsMap by detailsViewModel.seasonDetails.collectAsState()
                     val watchedEpisodeIds = watchlistViewModel.watchedEpisodesList.collectAsState().value[show?.id] ?: emptyList()
                     val today = java.util.Date()
+                    
+                    val totalEpisodes = show?.numberOfEpisodes ?: 0
+                    if (totalEpisodes > 0 && isInWatchlistCheck) {
+                        val progress = if (totalEpisodes > 0) watchedCount.toFloat() / totalEpisodes.toFloat() else 0f
+                        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Progress", fontSize = 14.sp, color = TextSecondary)
+                                Text("$watchedCount / $totalEpisodes Episodes", fontSize = 14.sp, color = BlueHighlight, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                                color = BlueHighlight,
+                                trackColor = SurfaceDark
+                            )
+                        }
+                    }
                     
                     show?.seasons?.filter { (it.seasonNumber ?: 0) > 0 }?.forEach { season ->
                         var isExpanded by remember { mutableStateOf(false) }
@@ -396,8 +541,8 @@ fun DetailsScreen(
                 Text(androidx.compose.ui.res.stringResource(com.example.R.string.reviews), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                var userRating by remember { mutableStateOf(0f) }
-                var userReviewText by remember { mutableStateOf("") }
+                var userRating by remember(userReview) { mutableStateOf(userReview?.rating ?: 0f) }
+                var userReviewText by remember(userReview) { mutableStateOf(userReview?.text ?: "") }
                 
                 Card(
                     colors = CardDefaults.cardColors(containerColor = SurfaceDark),
@@ -405,7 +550,7 @@ fun DetailsScreen(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Your Rating", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(if (userReview != null) "Edit Your Rating" else "Your Rating", color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         Spacer(modifier = Modifier.height(8.dp))
                         Row {
                             for (i in 1..5) {
@@ -441,15 +586,15 @@ fun DetailsScreen(
                                     android.widget.Toast.makeText(context, "Please sign in to write a review", android.widget.Toast.LENGTH_SHORT).show()
                                 } else if (userRating > 0f) {
                                     reviewViewModel.submitReview(showId, isMovie, userRating, userReviewText)
-                                    userReviewText = ""
-                                    userRating = 0f
+                                    socialViewModel.publishActivity("REVIEWED", showId, show?.title ?: show?.name ?: "Unknown", "Rated $userRating/5: $userReviewText")
+                                    android.widget.Toast.makeText(context, "Review saved", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = BlueHighlight),
                             shape = RoundedCornerShape(8.dp),
                             enabled = userRating > 0f
                         ) {
-                            Text(androidx.compose.ui.res.stringResource(com.example.R.string.submit_review), color = Color.White)
+                            Text(if (userReview != null) androidx.compose.ui.res.stringResource(com.example.R.string.edit_review) else androidx.compose.ui.res.stringResource(com.example.R.string.submit_review), color = Color.White)
                         }
                     }
                 }
@@ -464,7 +609,10 @@ fun DetailsScreen(
                     }
                 }
                 
-                reviews.forEach { review ->
+                var showAllReviews by remember { mutableStateOf(false) }
+                val visibleReviews = if (showAllReviews) reviews else reviews.take(3)
+                
+                visibleReviews.forEach { review ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -492,6 +640,15 @@ fun DetailsScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(review.text, color = TextSecondary, fontSize = 14.sp, lineHeight = 20.sp)
                         }
+                    }
+                }
+                
+                if (reviews.size > 3 && !showAllReviews) {
+                    TextButton(
+                        onClick = { showAllReviews = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(androidx.compose.ui.res.stringResource(com.example.R.string.view_all_reviews), color = BlueHighlight, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

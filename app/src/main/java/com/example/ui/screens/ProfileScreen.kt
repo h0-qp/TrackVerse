@@ -27,11 +27,22 @@ import com.example.viewmodel.AuthViewModel
 import androidx.compose.ui.res.stringResource
 import com.example.R
 
+import com.example.viewmodel.WatchlistViewModel
+import com.example.viewmodel.SocialViewModel
+
 @Composable
-fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel = viewModel()) {
+fun ProfileScreen(
+    navController: NavController? = null,
+    viewModel: AuthViewModel = viewModel(),
+    watchlistViewModel: WatchlistViewModel = viewModel(),
+    socialViewModel: SocialViewModel = viewModel()
+) {
     val user by viewModel.user.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val watchlist by watchlistViewModel.watchlist.collectAsState()
+    val watchedList by watchlistViewModel.watchedEpisodesList.collectAsState()
+    val following by socialViewModel.following.collectAsState()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -88,10 +99,26 @@ fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel
                     modifier = Modifier.padding(top = 8.dp)
                 )
 
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Stats Section
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    val totalEpisodes = watchedList.values.sumOf { it.size }
+                    ProfileStatItem(title = stringResource(R.string.following), value = following.size.toString())
+                    ProfileStatItem(title = stringResource(R.string.watchlist_title), value = watchlist.size.toString())
+                    ProfileStatItem(title = stringResource(R.string.episodes_watched), value = totalEpisodes.toString())
+                }
+
                 Spacer(modifier = Modifier.height(48.dp))
 
                 Button(
-                    onClick = { viewModel.signOut() },
+                    onClick = { 
+                        viewModel.signOut()
+                        watchlistViewModel.clearWatchlist()
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = TextPrimary),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
@@ -172,5 +199,14 @@ fun ProfileScreen(navController: NavController? = null, viewModel: AuthViewModel
                 )
             }
         }
+    }
+}
+
+@Composable
+fun ProfileStatItem(title: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = BlueHighlight)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = title, fontSize = 14.sp, color = TextTertiary)
     }
 }

@@ -69,4 +69,5 @@
 
     <!-- General -->
     <string name="search_hint">ابحث عن أفلام أو مسلسلات...</string>
+    <string name="watch_trailer">مشاهدة الإعلان الترويجي</string>
 </resources>

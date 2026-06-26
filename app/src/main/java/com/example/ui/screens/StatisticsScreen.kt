@@ -39,17 +39,20 @@ import java.util.Date
 @Composable
 fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: WatchlistViewModel = viewModel()) {
     val watchlist by watchlistViewModel.watchlist.collectAsState()
+    val seriesWatchlist = watchlist.filter { it.title == null }
+    val moviesWatchlist = watchlist.filter { it.title != null }
     val watchedList by watchlistViewModel.watchedEpisodesList.collectAsState()
-    var selectedTabIndex by remember { mutableStateOf(1) } // 0: Upcoming, 1: Watchlist
+    var mainTabIndex by remember { mutableStateOf(0) } // 0: Series, 1: Movies
+    var seriesTabIndex by remember { mutableStateOf(1) } // 0: Upcoming, 1: Watchlist
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
     LaunchedEffect(Unit) {
-        watchlistViewModel.loadWatchlist()
+        watchlistViewModel.loadWatchlist() // explicit fallback execution
     }
 
-    val upcomingEpisodes = watchlist.mapNotNull { show ->
+    val upcomingEpisodes = seriesWatchlist.mapNotNull { show ->
         show.nextEpisodeToAir?.let { episode ->
             Pair(show, episode)
         }
@@ -62,31 +65,57 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
             .windowInsetsPadding(WindowInsets.statusBars)
     ) {
         TabRow(
-            selectedTabIndex = selectedTabIndex,
+            selectedTabIndex = mainTabIndex,
             containerColor = Color.Black,
             contentColor = Color.White,
             indicator = { tabPositions ->
                 Box(
                     modifier = Modifier
-                        .tabIndicatorOffset(tabPositions[selectedTabIndex])
+                        .tabIndicatorOffset(tabPositions[mainTabIndex])
                         .height(3.dp)
                         .background(Color.White)
                 )
             }
         ) {
             Tab(
-                selected = selectedTabIndex == 0,
-                onClick = { selectedTabIndex = 0 },
-                text = { Text(stringResource(R.string.upcoming_tab), fontWeight = FontWeight.Bold) }
+                selected = mainTabIndex == 0,
+                onClick = { mainTabIndex = 0 },
+                text = { Text(stringResource(R.string.series_tab), fontWeight = FontWeight.Bold) }
             )
             Tab(
-                selected = selectedTabIndex == 1,
-                onClick = { selectedTabIndex = 1 },
-                text = { Text(stringResource(R.string.watchlist_tab), fontWeight = FontWeight.Bold) }
+                selected = mainTabIndex == 1,
+                onClick = { mainTabIndex = 1 },
+                text = { Text(stringResource(R.string.movies_tab), fontWeight = FontWeight.Bold) }
             )
         }
 
-        if (selectedTabIndex == 0) {
+        if (mainTabIndex == 0) {
+            TabRow(
+                selectedTabIndex = seriesTabIndex,
+                containerColor = Color.Black,
+                contentColor = Color.White,
+                indicator = { tabPositions ->
+                    Box(
+                        modifier = Modifier
+                            .tabIndicatorOffset(tabPositions[seriesTabIndex])
+                            .height(3.dp)
+                            .background(Color.White)
+                    )
+                }
+            ) {
+                Tab(
+                    selected = seriesTabIndex == 0,
+                    onClick = { seriesTabIndex = 0 },
+                    text = { Text(stringResource(R.string.upcoming_tab), fontWeight = FontWeight.Bold) }
+                )
+                Tab(
+                    selected = seriesTabIndex == 1,
+                    onClick = { seriesTabIndex = 1 },
+                    text = { Text(stringResource(R.string.watchlist_tab), fontWeight = FontWeight.Bold) }
+                )
+            }
+
+            if (seriesTabIndex == 0) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
@@ -181,7 +210,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                 }
             }
         } else {
-            val (finishedShows, activeShows) = watchlist.partition { show ->
+            val (finishedShows, activeShows) = seriesWatchlist.partition { show ->
                 val watchedCount = watchedList[show.id]?.size ?: 0
                 val totalEpisodes = show.numberOfEpisodes ?: 0
                 totalEpisodes > 0 && watchedCount >= totalEpisodes
@@ -273,7 +302,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                 .height(130.dp)
                                 .clickable {
                                     val isMovie = show.title != null
-                                    navController?.navigate("details/${show.id}/$isMovie")
+                                    navController?.navigate("details/${show.id}/$isMovie?source=stats")
                                 }
                                 .padding(8.dp)
                                 .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
@@ -284,7 +313,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                             if (sharedTransitionScope != null && animatedVisibilityScope != null) {
                                 with(sharedTransitionScope) {
                                     imgModifier = imgModifier.sharedElement(
-                                        state = rememberSharedContentState(key = "image-${show.id}"),
+                                        state = rememberSharedContentState(key = "image-${show.id}-stats"),
                                         animatedVisibilityScope = animatedVisibilityScope,
                                         boundsTransform = { _, _ -> tween(durationMillis = 500) }
                                     )
@@ -319,6 +348,54 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(show.overview ?: "", color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             }
+                        }
+                    }
+                }
+            }
+        } // End of seriesTabIndex else block
+        } else if (mainTabIndex == 1) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp)
+            ) {
+                items(moviesWatchlist) { show ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(130.dp)
+                            .clickable {
+                                navController?.navigate("details/${show.id}/true")
+                            }
+                            .padding(8.dp)
+                            .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(8.dp)),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AsyncImage(
+                            model = "https://image.tmdb.org/t/p/w200${show.posterPath ?: show.backdropPath}",
+                            contentDescription = null,
+                            modifier = Modifier.width(90.dp).fillMaxHeight(),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(
+                            modifier = Modifier.weight(1f).padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .border(1.dp, Color.White, RoundedCornerShape(16.dp))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text("< ${show.displayTitle.uppercase()}", color = Color.White, fontSize = 10.sp)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                show.title ?: "",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }

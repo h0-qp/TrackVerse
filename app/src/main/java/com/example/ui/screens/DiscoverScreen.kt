@@ -46,13 +46,13 @@ fun DiscoverScreen(navController: NavController, viewModel: DiscoverViewModel = 
                 }
             } else {
                 item {
-                    DiscoverSection("Trending Shows", trendingShows, navController)
+                    DiscoverSection("Trending Shows", "trending", shows = trendingShows, navController)
                 }
                 item {
-                    DiscoverSection("Popular Shows", popularShows, navController)
+                    DiscoverSection("Popular Shows", "popular", shows = popularShows, navController)
                 }
                 item {
-                    DiscoverSection("Top Rated Shows", topRatedShows, navController)
+                    DiscoverSection("Top Rated Shows", "toprated", shows = topRatedShows, navController)
                 }
             }
         }
@@ -60,7 +60,7 @@ fun DiscoverScreen(navController: NavController, viewModel: DiscoverViewModel = 
 }
 
 @Composable
-fun DiscoverSection(title: String, shows: List<com.example.network.TmdbShow>, navController: NavController) {
+fun DiscoverSection(title: String, sectionKey: String, shows: List<com.example.network.TmdbShow>, navController: NavController) {
     if (shows.isEmpty()) return
     Text(title, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
     Spacer(modifier = Modifier.height(16.dp))
@@ -69,11 +69,12 @@ fun DiscoverSection(title: String, shows: List<com.example.network.TmdbShow>, na
             val show = shows[index]
             SearchResultItem(
                 show = show,
+                sourceKey = sectionKey,
                 modifier = Modifier
                     .width(120.dp)
                     .clickable {
                         val isMovie = show.title != null
-                        navController.navigate("details/${show.id}/$isMovie")
+                        navController.navigate("details/${show.id}/$isMovie?source=${sectionKey}")
                     }
             )
         }

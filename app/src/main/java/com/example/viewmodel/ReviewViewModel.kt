@@ -16,7 +16,7 @@ data class Review(
     val userId: String = "",
     val userName: String = "",
     val showId: Int = 0,
-    val isMovie: Boolean = false,
+    val isMovieItem: Boolean = false,
     val rating: Float = 0f,
     val text: String = "",
     val timestamp: Long = System.currentTimeMillis()
@@ -29,6 +29,9 @@ class ReviewViewModel : ViewModel() {
     private val _reviews = MutableStateFlow<List<Review>>(emptyList())
     val reviews: StateFlow<List<Review>> = _reviews.asStateFlow()
 
+    private val _userReview = MutableStateFlow<Review?>(null)
+    val userReview: StateFlow<Review?> = _userReview.asStateFlow()
+
     private val _averageRating = MutableStateFlow(0f)
     val averageRating: StateFlow<Float> = _averageRating.asStateFlow()
 
@@ -37,15 +40,17 @@ class ReviewViewModel : ViewModel() {
             try {
                 val snapshot = db.collection("reviews")
                     .whereEqualTo("showId", showId)
-                    .whereEqualTo("isMovie", isMovie)
-                    .orderBy("timestamp", Query.Direction.DESCENDING)
                     .get()
                     .await()
 
                 val items = snapshot.documents.mapNotNull { doc ->
                     doc.toObject(Review::class.java)?.copy(id = doc.id)
-                }
+                }.filter { it.isMovieItem == isMovie }.sortedByDescending { it.timestamp }
+                
                 _reviews.value = items
+                
+                val currentUserId = auth.currentUser?.uid
+                _userReview.value = items.find { it.userId == currentUserId }
                 
                 if (items.isNotEmpty()) {
                     _averageRating.value = items.map { it.rating }.average().toFloat()
@@ -62,13 +67,19 @@ class ReviewViewModel : ViewModel() {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
             try {
-                val reviewRef = db.collection("reviews").document()
+                val existingReview = _userReview.value
+                val reviewRef = if (existingReview != null) {
+                    db.collection("reviews").document(existingReview.id)
+                } else {
+                    db.collection("reviews").document()
+                }
+                
                 val review = Review(
                     id = reviewRef.id,
                     userId = user.uid,
-                    userName = user.email?.substringBefore("@") ?: "Anonymous",
+                    userName = user.displayName ?: user.email?.substringBefore("@") ?: "Anonymous",
                     showId = showId,
-                    isMovie = isMovie,
+                    isMovieItem = isMovie,
                     rating = rating,
                     text = text,
                     timestamp = System.currentTimeMillis()

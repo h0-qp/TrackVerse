@@ -29,6 +29,10 @@
     <string name="seasons_and_episodes">Seasons &amp; Episodes</string>
     <string name="subscribe_series">Subscribe to Series</string>
     <string name="unsubscribe_remove">Unsubscribe / Remove</string>
+    <string name="watch_movie">Watch Movie</string>
+    <string name="remove_watched_movie">Remove from Watched</string>
+    <string name="edit_review">Update Review</string>
+    <string name="view_all_reviews">View all reviews</string>
     <string name="season">Season</string>
     <string name="in_days">In %1$d days</string>
     <string name="tba">TBA</string>
@@ -55,6 +59,8 @@
     <string name="cast">Cast &amp; Crew</string>
     <string name="upcoming_tab">Upcoming</string>
     <string name="watchlist_tab">Watchlist</string>
+    <string name="movies_tab">Movies</string>
+    <string name="series_tab">Series</string>
     <string name="in_hours">In %d h</string>
     <string name="reviews">Reviews</string>
     <string name="write_review">Write a review...</string>
@@ -63,10 +69,16 @@
     <string name="find_users">Find Users</string>
     <string name="follow">Follow</string>
     <string name="following">Following</string>
+    <string name="watchlist_title">Watchlist</string>
+    <string name="episodes_watched">Episodes</string>
     <string name="recent_activity">Recent Activity</string>
     <string name="no_users_found">No users found</string>
     <string name="finished_shows">Finished</string>
+    <string name="added_to_watchlist">added to watchlist</string>
+    <string name="reviewed">reviewed</string>
+    <string name="watched_social">watched</string>
     
     <!-- General -->
     <string name="search_hint">Search movies or TV shows...</string>
+    <string name="watch_trailer">Watch Trailer</string>
 </resources>

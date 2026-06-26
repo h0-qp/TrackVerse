@@ -80,16 +80,16 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel = view
             }
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+                columns = GridCells.Adaptive(110.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
                 items(results) { show ->
-                    SearchResultItem(show = show, modifier = Modifier.clickable {
+                    SearchResultItem(show = show, sourceKey = "search", modifier = Modifier.clickable {
                         val isMovie = show.title != null
-                        navController.navigate("details/${show.id}/$isMovie")
+                        navController.navigate("details/${show.id}/$isMovie?source=search")
                     })
                 }
             }
@@ -99,9 +99,10 @@ fun SearchScreen(navController: NavController, viewModel: SearchViewModel = view
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun SearchResultItem(show: TmdbShow, modifier: Modifier = Modifier) {
+fun SearchResultItem(show: TmdbShow, sourceKey: String = "", modifier: Modifier = Modifier) {
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+    val finalKey = if (sourceKey.isNotEmpty()) "image-${show.id}-$sourceKey" else "image-${show.id}"
 
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
@@ -116,7 +117,7 @@ fun SearchResultItem(show: TmdbShow, modifier: Modifier = Modifier) {
             if (sharedTransitionScope != null && animatedVisibilityScope != null) {
                 with(sharedTransitionScope) {
                     imgModifier = imgModifier.sharedElement(
-                        state = rememberSharedContentState(key = "image-${show.id}"),
+                        state = rememberSharedContentState(key = finalKey),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> tween(durationMillis = 500) }
                     )

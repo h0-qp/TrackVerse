@@ -51,7 +51,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     val watchedCounts by watchlistViewModel.watchedEpisodesCount.collectAsState()
 
     LaunchedEffect(user) {
-        watchlistViewModel.loadWatchlist()
+        watchlistViewModel.loadWatchlist() // Explicit generic network fetch call 
     }
     
     val totalShows = watchlist.count { it.title == null }.toString()
@@ -148,12 +148,12 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             ) {
                 var imgModifier = Modifier.fillMaxSize().clickable {
                     val isMovie = heroShow.title != null
-                    navController.navigate("details/${heroShow.id}/$isMovie")
+                    navController.navigate("details/${heroShow.id}/$isMovie?source=home-hero")
                 }
                 if (sharedTransitionScope != null && animatedVisibilityScope != null) {
                     with(sharedTransitionScope) {
                         imgModifier = imgModifier.sharedElement(
-                            state = rememberSharedContentState(key = "image-${heroShow.id}"),
+                            state = rememberSharedContentState(key = "image-${heroShow.id}-home-hero"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ -> tween(durationMillis = 500) }
                         )
@@ -213,20 +213,22 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             Text(stringResource(R.string.top_rated_shows), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
         }
 
-        Row(
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (topRatedShows.isNotEmpty()) {
-                val displays = topRatedShows.take(3)
+                val displays = topRatedShows.take(6)
                 displays.forEach { show ->
                     AiRecItem(
                         id = show.id,
                         title = show.displayTitle,
                         imageUrl = "https://image.tmdb.org/t/p/w342${show.posterPath}",
-                        modifier = Modifier.weight(1f).clickable {
+                        modifier = Modifier.widthIn(min = 100.dp, max = 150.dp).weight(1f).clickable {
                             val isMovie = show.title != null
-                            navController.navigate("details/${show.id}/$isMovie")
+                            navController.navigate("details/${show.id}/$isMovie?source=home-grid")
                         }
                     )
                 }
@@ -274,7 +276,7 @@ fun AiRecItem(id: Int, title: String, imageUrl: String, modifier: Modifier = Mod
             if (sharedTransitionScope != null && animatedVisibilityScope != null) {
                 with(sharedTransitionScope) {
                     imgModifier = imgModifier.sharedElement(
-                        state = rememberSharedContentState(key = "image-$id"),
+                        state = rememberSharedContentState(key = "image-$id-home-grid"),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> tween(durationMillis = 500) }
                     )

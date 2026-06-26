@@ -24,7 +24,7 @@ interface TmdbService {
     @GET("3/tv/{tv_id}")
     suspend fun getTvDetails(
         @retrofit2.http.Path("tv_id") id: Int,
-        @Query("append_to_response") appendToResponse: String = "credits"
+        @Query("append_to_response") appendToResponse: String = "credits,videos"
     ): TmdbShow
 
     @GET("3/tv/{tv_id}/season/{season_number}")
@@ -36,7 +36,7 @@ interface TmdbService {
     @GET("3/movie/{movie_id}")
     suspend fun getMovieDetails(
         @retrofit2.http.Path("movie_id") id: Int,
-        @Query("append_to_response") appendToResponse: String = "credits"
+        @Query("append_to_response") appendToResponse: String = "credits,videos"
     ): TmdbShow
 
     @GET("3/person/{person_id}")
