@@ -1,5 +1,15 @@
 const { execSync } = require('child_process');
+const fs = require('fs');
+
 try {
+    // Copy APK to root directory for easy access
+    try {
+        fs.copyFileSync('./app/build/outputs/apk/debug/app-debug.apk', './app-debug.apk');
+        console.log('Copied app-debug.apk to root directory.');
+    } catch (copyErr) {
+        console.error('Failed to copy APK:', copyErr.message);
+    }
+
     console.log('Fetching server...');
     const serversRes = execSync('curl -s https://api.gofile.io/servers');
     const servers = JSON.parse(serversRes.toString());

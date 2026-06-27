@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
@@ -20,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -34,8 +37,12 @@ import com.example.viewmodel.DetailsViewModel
 import com.example.viewmodel.WatchlistViewModel
 import com.example.viewmodel.ReviewViewModel
 import com.example.viewmodel.SocialViewModel
+import com.example.viewmodel.CustomListViewModel
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -48,7 +55,8 @@ fun DetailsScreen(
     detailsViewModel: DetailsViewModel = viewModel(),
     watchlistViewModel: WatchlistViewModel = viewModel(),
     reviewViewModel: ReviewViewModel = viewModel(),
-    socialViewModel: SocialViewModel = viewModel()
+    socialViewModel: SocialViewModel = viewModel(),
+    customListViewModel: CustomListViewModel = viewModel()
 ) {
     val show by detailsViewModel.show.collectAsState()
     val isLoading by detailsViewModel.isLoading.collectAsState()
@@ -59,10 +67,19 @@ fun DetailsScreen(
     val userReview by reviewViewModel.userReview.collectAsState()
     val averageRating by reviewViewModel.averageRating.collectAsState()
 
+    val myCustomLists by customListViewModel.myLists.collectAsState()
+    var showAddToListDialog by remember { mutableStateOf(false) }
+    var showSuggestDialog by remember { mutableStateOf(false) }
+    val followingProfiles by socialViewModel.followingProfiles.collectAsState()
+    var selectedEpisode by remember { mutableStateOf<com.example.network.TmdbEpisode?>(null) }
+
     val scrollState = rememberScrollState()
 
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+    
+    var dominantColor by remember { mutableStateOf<Color?>(null) }
+    val dynamicThemeColor = dominantColor ?: BlueHighlight
 
     LaunchedEffect(showId) {
         detailsViewModel.loadDetails(showId, isMovie)
@@ -101,10 +118,25 @@ fun DetailsScreen(
                 }
 
                 AsyncImage(
-                    model = "https://image.tmdb.org/t/p/w780${show?.posterPath}",
+                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data("https://image.tmdb.org/t/p/w780${show?.posterPath}")
+                        .allowHardware(false)
+                        .build(),
                     contentDescription = show?.displayTitle,
                     modifier = imgModifier,
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    onSuccess = { result ->
+                        val bitmap = (result.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                        if (bitmap != null) {
+                            androidx.palette.graphics.Palette.from(bitmap).generate { palette ->
+                                palette?.dominantSwatch?.rgb?.let { colorInt ->
+                                    dominantColor = Color(colorInt)
+                                } ?: palette?.mutedSwatch?.rgb?.let { colorInt ->
+                                    dominantColor = Color(colorInt)
+                                }
+                            }
+                        }
+                    }
                 )
             // Gradient Overlay
             Box(
@@ -112,7 +144,12 @@ fun DetailsScreen(
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(Color.Black.copy(alpha=0.6f), Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                            colors = listOf(
+                                Color.Black.copy(alpha=0.6f),
+                                Color.Transparent,
+                                dominantColor?.copy(alpha=0.4f) ?: Color.Black.copy(alpha = 0.5f),
+                                MaterialTheme.colorScheme.background
+                            )
                         )
                     )
             )
@@ -136,30 +173,137 @@ fun DetailsScreen(
                 
                 val context = androidx.compose.ui.platform.LocalContext.current
                 val shareTitle = show?.displayTitle ?: "this"
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Share",
-                    tint = Color.White,
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clickable {
-                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(android.content.Intent.EXTRA_SUBJECT, shareTitle)
-                                val typeString = if (isMovie) "movie" else "tv"
-                                putExtra(android.content.Intent.EXTRA_TEXT, "Check out $shareTitle on TMDB! https://www.themoviedb.org/$typeString/${show?.id}")
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.PlaylistAdd,
+                        contentDescription = "Add to Custom List",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clickable {
+                                if (myCustomLists.isNotEmpty()) {
+                                    showAddToListDialog = true
+                                } else {
+                                    android.widget.Toast.makeText(context, "Create a Custom List first from your Profile", android.widget.Toast.LENGTH_SHORT).show()
+                                }
                             }
-                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share via"))
-                        }
-                )
+                    )
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Default.Send,
+                        contentDescription = "Suggest to Friend",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable {
+                                if (followingProfiles.isNotEmpty()) {
+                                    showSuggestDialog = true
+                                } else {
+                                    android.widget.Toast.makeText(context, "Follow some friends first", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share",
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable {
+                                val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, shareTitle)
+                                    val typeString = if (isMovie) "movie" else "tv"
+                                    putExtra(android.content.Intent.EXTRA_TEXT, "Check out $shareTitle on TMDB! https://www.themoviedb.org/$typeString/${show?.id}")
+                                }
+                                context.startActivity(android.content.Intent.createChooser(shareIntent, "Share via"))
+                            }
+                    )
+                }
             }
 
-            if (isLoading) {
+                if (isLoading) {
                 CircularProgressIndicator(
-                    color = BlueHighlight,
+                    color = dynamicThemeColor,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
+        }
+
+        if (showAddToListDialog && show != null) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            AlertDialog(
+                onDismissRequest = { showAddToListDialog = false },
+                title = { Text("Add to Custom List", color = TextPrimary) },
+                text = {
+                    Column {
+                        myCustomLists.forEach { list ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        customListViewModel.addShowToList(list.id, show!!, isMovie)
+                                        android.widget.Toast.makeText(context, "Added to ${list.name}", android.widget.Toast.LENGTH_SHORT).show()
+                                        showAddToListDialog = false
+                                    }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.PlaylistAdd, contentDescription = null, tint = dynamicThemeColor)
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(list.name, color = TextPrimary, fontSize = 16.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showAddToListDialog = false }) {
+                        Text("Close", color = TextSecondary)
+                    }
+                },
+                containerColor = SurfaceDark,
+                textContentColor = TextSecondary
+            )
+        }
+
+        if (showSuggestDialog && show != null) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            AlertDialog(
+                onDismissRequest = { showSuggestDialog = false },
+                title = { Text("Suggest to Friend", color = TextPrimary) },
+                text = {
+                    Column {
+                        followingProfiles.forEach { friend ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        socialViewModel.suggestShow(show!!.id, show!!.displayTitle, friend.uid, friend.displayName)
+                                        android.widget.Toast.makeText(context, "Suggested to ${friend.displayName}", android.widget.Toast.LENGTH_SHORT).show()
+                                        showSuggestDialog = false
+                                    }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFF555555)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(friend.displayName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(friend.displayName, color = TextPrimary, fontSize = 16.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showSuggestDialog = false }) {
+                        Text("Close", color = TextSecondary)
+                    }
+                },
+                containerColor = SurfaceDark,
+                textContentColor = TextSecondary
+            )
         }
 
         if (show != null) {
@@ -176,7 +320,7 @@ fun DetailsScreen(
                         text = "★ ${show?.voteAverage?.toString()?.take(3) ?: androidx.compose.ui.res.stringResource(com.example.R.string.not_available)}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = BlueLight
+                        color = dynamicThemeColor
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Box(
@@ -209,7 +353,7 @@ fun DetailsScreen(
                         onClick = {
                             uriHandler.openUri("https://www.youtube.com/watch?v=${firstTrailer.key}")
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = BlueLight.copy(alpha = 0.2f), contentColor = BlueLight),
+                        colors = ButtonDefaults.buttonColors(containerColor = dynamicThemeColor.copy(alpha = 0.2f), contentColor = dynamicThemeColor),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth().height(56.dp)
                     ) {
@@ -299,7 +443,7 @@ fun DetailsScreen(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isInWatchlistCheck) SurfaceDark else BlueHighlight,
+                        containerColor = if (isInWatchlistCheck) SurfaceDark else dynamicThemeColor,
                         contentColor = TextPrimary
                     ),
                     shape = RoundedCornerShape(16.dp),
@@ -349,11 +493,11 @@ fun DetailsScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     placeholder = { Text("What did you think?", color = TextSecondary) },
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = BlueHighlight,
+                                        focusedBorderColor = dynamicThemeColor,
                                         unfocusedBorderColor = TextTertiary,
                                         focusedTextColor = TextPrimary,
                                         unfocusedTextColor = TextPrimary,
-                                        cursorColor = BlueHighlight
+                                        cursorColor = dynamicThemeColor
                                     ),
                                     maxLines = 4
                                 )
@@ -368,7 +512,7 @@ fun DetailsScreen(
                                     }
                                     showReviewDialog = false
                                 },
-                                content = { Text("Submit", color = BlueHighlight) }
+                                content = { Text("Submit", color = dynamicThemeColor) }
                             )
                         },
                         dismissButton = {
@@ -398,13 +542,18 @@ fun DetailsScreen(
                         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("Progress", fontSize = 14.sp, color = TextSecondary)
-                                Text("$watchedCount / $totalEpisodes Episodes", fontSize = 14.sp, color = BlueHighlight, fontWeight = FontWeight.Bold)
+                                Row {
+                                    val watchedColor = if (watchedCount == totalEpisodes) Color(0xFF66BB6A) else Color(0xFF64B5F6)
+                                    Text("$watchedCount", fontSize = 14.sp, color = watchedColor, fontWeight = FontWeight.Bold)
+                                    Text(" / ", fontSize = 14.sp, color = TextSecondary)
+                                    Text("$totalEpisodes Episodes", fontSize = 14.sp, color = Color(0xFF66BB6A), fontWeight = FontWeight.Bold)
+                                }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                             LinearProgressIndicator(
                                 progress = { progress },
                                 modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                                color = BlueHighlight,
+                                color = Color(0xFF66BB6A),
                                 trackColor = SurfaceDark
                             )
                         }
@@ -454,7 +603,8 @@ fun DetailsScreen(
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .padding(vertical = 8.dp),
+                                                .padding(vertical = 8.dp)
+                                                .clickable { selectedEpisode = episode },
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
@@ -464,6 +614,15 @@ fun DetailsScreen(
                                                 color = TextTertiary,
                                                 modifier = Modifier.width(32.dp)
                                             )
+                                            if (episode.stillPath != null) {
+                                                coil.compose.AsyncImage(
+                                                    model = "https://image.tmdb.org/t/p/w227_and_h127_bestv2${episode.stillPath}",
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(width = 80.dp, height = 45.dp).clip(RoundedCornerShape(4.dp)),
+                                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                            }
                                             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                                                 Text(episode.name ?: androidx.compose.ui.res.stringResource(com.example.R.string.tba), fontSize = 14.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
                                                 Text(airDateStr ?: androidx.compose.ui.res.stringResource(com.example.R.string.unknown_date), fontSize = 12.sp, color = TextTertiary)
@@ -478,15 +637,16 @@ fun DetailsScreen(
                                                 Text(
                                                     text = timeText,
                                                     fontSize = 12.sp,
-                                                    color = BlueHighlight,
+                                                    color = Color(0xFF64B5F6),
                                                     fontWeight = FontWeight.Bold,
                                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                                    modifier = Modifier.background(BlueHighlight.copy(alpha = 0.2f), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                                    modifier = Modifier.background(Color(0xFF64B5F6).copy(alpha = 0.2f), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
                                                 )
                                             } else {
-                                                Checkbox(
-                                                    checked = isWatched,
-                                                    onCheckedChange = {
+                                                val animatedColor by androidx.compose.animation.animateColorAsState(targetValue = if (isWatched) Color(0xFF66BB6A) else TextTertiary, label = "color")
+                                                val scale by androidx.compose.animation.core.animateFloatAsState(targetValue = if (isWatched) 1.1f else 1f, label = "scale")
+                                                androidx.compose.material3.IconButton(
+                                                    onClick = {
                                                         if (auth.currentUser == null) {
                                                             android.widget.Toast.makeText(context, "Please sign in to track progress", android.widget.Toast.LENGTH_SHORT).show()
                                                         } else if (!isInWatchlist) {
@@ -495,18 +655,21 @@ fun DetailsScreen(
                                                             watchlistViewModel.toggleEpisodeWatched(show!!.id, episode.id)
                                                         }
                                                     },
-                                                    colors = CheckboxDefaults.colors(
-                                                        checkedColor = BlueHighlight,
-                                                        uncheckedColor = TextTertiary,
-                                                        checkmarkColor = BgDark
+                                                    modifier = Modifier.size(36.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (isWatched) Icons.Filled.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                                                        contentDescription = "Watched",
+                                                        tint = animatedColor,
+                                                        modifier = Modifier.size(28.dp).scale(scale)
                                                     )
-                                                )
+                                                }
                                             }
                                         }
                                         HorizontalDivider(color = BorderStroke)
                                     }
                                 } else {
-                                    CircularProgressIndicator(color = BlueHighlight, modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
+                                    CircularProgressIndicator(color = dynamicThemeColor, modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
                                 }
                             }
                         }
@@ -524,10 +687,10 @@ fun DetailsScreen(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(BlueHighlight.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+                                .background(Color(0xFF64B5F6).copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(show?.nextEpisodeToAir?.episodeNumber?.toString() ?: "", color = BlueHighlight, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                            Text(show?.nextEpisodeToAir?.episodeNumber?.toString() ?: "", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold, fontSize = 20.sp)
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
@@ -571,11 +734,11 @@ fun DetailsScreen(
                             placeholder = { Text(androidx.compose.ui.res.stringResource(com.example.R.string.write_review), color = TextTertiary) },
                             modifier = Modifier.fillMaxWidth().height(100.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = BlueHighlight,
+                                focusedBorderColor = dynamicThemeColor,
                                 unfocusedBorderColor = BorderStroke,
                                 focusedTextColor = TextPrimary,
                                 unfocusedTextColor = TextPrimary,
-                                cursorColor = BlueHighlight
+                                cursorColor = dynamicThemeColor
                             ),
                             maxLines = 4
                         )
@@ -590,7 +753,7 @@ fun DetailsScreen(
                                     android.widget.Toast.makeText(context, "Review saved", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = BlueHighlight),
+                            colors = ButtonDefaults.buttonColors(containerColor = dynamicThemeColor),
                             shape = RoundedCornerShape(8.dp),
                             enabled = userRating > 0f
                         ) {
@@ -622,7 +785,7 @@ fun DetailsScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
-                                modifier = Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(BlueHighlight),
+                                modifier = Modifier.size(32.dp).clip(androidx.compose.foundation.shape.CircleShape).background(dynamicThemeColor),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(review.userName.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold)
@@ -648,7 +811,7 @@ fun DetailsScreen(
                         onClick = { showAllReviews = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(androidx.compose.ui.res.stringResource(com.example.R.string.view_all_reviews), color = BlueHighlight, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.example.R.string.view_all_reviews), color = dynamicThemeColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -678,6 +841,66 @@ fun DetailsScreen(
                     .size(32.dp)
                     .clickable { onBack() }
             )
+        }
+    }
+    
+    selectedEpisode?.let { episode ->
+        EpisodeDetailsSheet(
+            episode = episode,
+            onDismiss = { selectedEpisode = null }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EpisodeDetailsSheet(
+    episode: com.example.network.TmdbEpisode,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            if (episode.stillPath != null) {
+                coil.compose.AsyncImage(
+                    model = "https://image.tmdb.org/t/p/w710_and_h400_multi_faces${episode.stillPath}",
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().aspectRatio(16f/9f).clip(RoundedCornerShape(8.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+            Text(
+                text = "${episode.episodeNumber}. ${episode.name ?: androidx.compose.ui.res.stringResource(com.example.R.string.tba)}",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (episode.voteAverage != null && episode.voteAverage > 0) {
+                    Icon(androidx.compose.material.icons.Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(String.format("%.1f", episode.voteAverage), color = TextPrimary, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(16.dp))
+                }
+                if (episode.runtime != null && episode.runtime > 0) {
+                    Text("${episode.runtime} min", color = TextSecondary, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(16.dp))
+                }
+                Text(episode.airDate ?: "", color = TextSecondary, fontSize = 14.sp)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = episode.overview?.takeIf { it.isNotBlank() } ?: "No overview available.",
+                color = TextSecondary,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

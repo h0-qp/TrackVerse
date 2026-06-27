@@ -2,7 +2,6 @@ package com.example.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.BuildConfig
 import com.example.network.ApiClient
 import com.example.network.TmdbShow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,38 +9,49 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class DiscoverViewModel : ViewModel() {
-    private val _trendingShows = MutableStateFlow<List<TmdbShow>>(emptyList())
-    val trendingShows: StateFlow<List<TmdbShow>> = _trendingShows
-
-    private val _popularShows = MutableStateFlow<List<TmdbShow>>(emptyList())
-    val popularShows: StateFlow<List<TmdbShow>> = _popularShows
-
-    private val _topRatedShows = MutableStateFlow<List<TmdbShow>>(emptyList())
-    val topRatedShows: StateFlow<List<TmdbShow>> = _topRatedShows
+    private val _discoverResults = MutableStateFlow<List<TmdbShow>>(emptyList())
+    val discoverResults: StateFlow<List<TmdbShow>> = _discoverResults
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
-    
+
+    var currentType = MutableStateFlow("tv") // "tv" or "movie"
+    var selectedGenre = MutableStateFlow<String?>(null)
+    var selectedYear = MutableStateFlow<String?>(null)
+    var selectedRating = MutableStateFlow<Float?>(null)
+    var selectedSortBy = MutableStateFlow("popularity.desc")
+
     init {
-        loadDiscover()
+        applyFilters()
     }
 
-    private fun loadDiscover() {
+    fun applyFilters() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val trending = ApiClient.tmdbService.getTrendingShows()
-                _trendingShows.value = trending.results
-
-                val popular = ApiClient.tmdbService.getPopularShows()
-                _popularShows.value = popular.results
-
-                val topRated = ApiClient.tmdbService.getTopRatedShows()
-                _topRatedShows.value = topRated.results
+                if (currentType.value == "tv") {
+                    val response = ApiClient.tmdbService.discoverTv(
+                        withGenres = selectedGenre.value,
+                        firstAirDateYear = selectedYear.value,
+                        voteAverageGte = selectedRating.value,
+                        sortBy = selectedSortBy.value
+                    )
+                    _discoverResults.value = response.results
+                } else {
+                    val response = ApiClient.tmdbService.discoverMovie(
+                        withGenres = selectedGenre.value,
+                        primaryReleaseYear = selectedYear.value,
+                        voteAverageGte = selectedRating.value,
+                        sortBy = selectedSortBy.value
+                    )
+                    _discoverResults.value = response.results
+                }
             } catch (e: Exception) {
+                e.printStackTrace()
             } finally {
                 _isLoading.value = false
             }
         }
     }
 }
+

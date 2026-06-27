@@ -67,7 +67,36 @@
     <string name="no_users_found">لم يتم العثور على مستخدمين</string>
     <string name="finished_shows">منتهي</string>
 
+    <string name="episodes_watched">حلقات</string>
+    <string name="added_to_watchlist">أضاف لقائمة المشاهدة</string>
+    <string name="reviewed">قيّم</string>
+    <string name="watched_social">شاهد</string>
+    
     <!-- General -->
     <string name="search_hint">ابحث عن أفلام أو مسلسلات...</string>
     <string name="watch_trailer">مشاهدة الإعلان الترويجي</string>
+
+    <!-- New Strings -->
+    <string name="suggest_to_friend">اقتراح لصديق</string>
+    <string name="follow_friends_first">قم بمتابعة أصدقاء أولاً</string>
+    <string name="suggested_to">تم الاقتراح لـ %1$s</string>
+    <string name="close">إغلاق</string>
+    <string name="activity_feed">النشاطات</string>
+    <string name="public_lists">القوائم العامة</string>
+    <string name="suggested">اقترح</string>
+    <string name="by">بواسطة %1$s</string>
+    <string name="items">%1$d عنصر</string>
+    <string name="like">إعجاب</string>
+    <string name="comment">تعليق</string>
+    <string name="add_a_comment">أضف تعليقاً...</string>
+    <string name="post">نشر</string>
+    <string name="watchlist_title">قائمة المشاهدة</string>
+    <string name="onboarding_title_1">مرحباً بك في متعقب TMDB</string>
+    <string name="onboarding_desc_1">تتبع أفلامك ومسلسلاتك المفضلة، أدر ما تشاهده، واكتشف محتوى جديد بكل سهولة.</string>
+    <string name="onboarding_title_2">تتبع تقدمك</string>
+    <string name="onboarding_desc_2">لا تفقد مسار الحلقة التي تشاهدها. علم الحلقات كمشاهدة بسهولة وراقب تقدمك.</string>
+    <string name="onboarding_title_3">قوائم مخصصة ومجتمع</string>
+    <string name="onboarding_desc_3">أنشئ قوائمك المخصصة، شاركها مع أصدقائك، وتفاعل مع مجتمع محبي الأفلام والمسلسلات.</string>
+    <string name="next">التالي</string>
+    <string name="start">ابدأ</string>
 </resources>

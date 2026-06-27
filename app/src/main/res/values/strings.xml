@@ -50,6 +50,22 @@
     <string name="shows">SHOWS</string>
     <string name="view_all">View All</string>
     <string name="trending_today">Trending Today</string>
+    <string name="continue_watching">Continue Watching</string>
+    <string name="top_rated_movies">Top Rated Movies</string>
+    <string name="recommended_for_you">Recommended for You</string>
+    <string name="releasing_today">Releasing Today</string>
+    <string name="productivity_summary">Productivity Summary</string>
+    <string name="last_watched_record">Last Watched</string>
+    <string name="last_watched_prefix">Last Watched:</string>
+    <string name="episodes_left">Episodes Left</string>
+    <string name="movies_left">Movies Left</string>
+    <string name="recommended_playlist">Recommended Playlist</string>
+    <string name="high_rated_similar">High-rated, similar to your favorites</string>
+    <string name="start_playlist">Start Playlist</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="username">Username</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
     <string name="top_rated_shows">Top Rated Shows</string>
     <string name="upcoming_episodes">Upcoming Episodes</string>
     <string name="my_shows">My Shows</string>
@@ -81,4 +97,26 @@
     <!-- General -->
     <string name="search_hint">Search movies or TV shows...</string>
     <string name="watch_trailer">Watch Trailer</string>
+    <!-- New Strings -->
+    <string name="suggest_to_friend">Suggest to Friend</string>
+    <string name="follow_friends_first">Follow some friends first</string>
+    <string name="suggested_to">Suggested to %1$s</string>
+    <string name="close">Close</string>
+    <string name="activity_feed">Activity Feed</string>
+    <string name="public_lists">Public Lists</string>
+    <string name="suggested">suggested</string>
+    <string name="by">By %1$s</string>
+    <string name="items">%1$d items</string>
+    <string name="like">Like</string>
+    <string name="comment">Comment</string>
+    <string name="add_a_comment">Add a comment...</string>
+    <string name="post">Post</string>
+    <string name="onboarding_title_1">Welcome to TMDB Tracker</string>
+    <string name="onboarding_desc_1">Track your favorite movies and TV shows, manage what you watch, and discover new content easily.</string>
+    <string name="onboarding_title_2">Track Your Progress</string>
+    <string name="onboarding_desc_2">Never lose track of which episode you\'re on. Easily mark episodes as watched and see your progress.</string>
+    <string name="onboarding_title_3">Custom Lists &amp; Community</string>
+    <string name="onboarding_desc_3">Create your own custom lists, share them with friends, and interact with the community.</string>
+    <string name="next">Next</string>
+    <string name="start">Start</string>
 </resources>

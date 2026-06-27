@@ -11,6 +11,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.clickable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.*
 import com.example.ui.navigation.Screen
@@ -70,50 +72,66 @@ fun MainScreen() {
         Screen.Profile
     )
 
+    val prefs = context.getSharedPreferences("prefs", android.content.Context.MODE_PRIVATE)
+    val startDest = if (prefs.getBoolean("onboarding_completed", false)) Screen.Home.route else "onboarding"
+
     SharedTransitionLayout {
         CompositionLocalProvider(
             LocalSharedTransitionScope provides this
         ) {
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Color(0xFF141A29).copy(alpha = 0.85f))
-                            .border(1.dp, Color.White.copy(alpha=0.1f), RoundedCornerShape(24.dp))
-                    ) {
-                        NavigationBar(
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.primary,
-                            tonalElevation = 0.dp,
-                            windowInsets = WindowInsets(0,0,0,0) // To remove default navbar padding in floating mode
+                    if (currentRoute != "onboarding") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 24.dp)
+                                .clip(RoundedCornerShape(32.dp))
+                                .background(Color(0xFF11141E).copy(alpha = 0.95f))
+                                .border(1.dp, Color.White.copy(alpha=0.1f), RoundedCornerShape(32.dp))
+                                .padding(vertical = 8.dp, horizontal = 12.dp)
                         ) {
-                            val navBackStackEntry by navController.currentBackStackEntryAsState()
-                            val currentRoute = navBackStackEntry?.destination?.route
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                items.forEach { screen ->
+                                    val isSelected = currentRoute?.startsWith(screen.route) == true
+                                    val animatedWeight by androidx.compose.animation.core.animateFloatAsState(targetValue = if (isSelected) 1.5f else 1f, label = "weight")
+                                    val animatedBgColor by androidx.compose.animation.animateColorAsState(targetValue = if (isSelected) com.example.ui.theme.BlueHighlight.copy(alpha = 0.2f) else Color.Transparent, label = "bg")
+                                    val animatedIconColor by androidx.compose.animation.animateColorAsState(targetValue = if (isSelected) com.example.ui.theme.BlueHighlight else Color.Gray, label = "icon")
 
-                            items.forEach { screen ->
-                                NavigationBarItem(
-                                    icon = { Icon(screen.icon, contentDescription = androidx.compose.ui.res.stringResource(screen.titleRes)) },
-                                    label = { Text(androidx.compose.ui.res.stringResource(screen.titleRes), fontWeight = FontWeight.Bold) },
-                                    selected = currentRoute?.startsWith(screen.route) == true,
-                                    onClick = {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        indicatorColor = Color.Transparent
-                                    )
-                                )
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(animatedWeight)
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .background(animatedBgColor)
+                                            .clickable(
+                                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                                indication = null
+                                            ) {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            screen.icon,
+                                            contentDescription = androidx.compose.ui.res.stringResource(screen.titleRes),
+                                            tint = animatedIconColor,
+                                            modifier = Modifier.size(26.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -121,9 +139,17 @@ fun MainScreen() {
             ) { innerPadding ->
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.Home.route,
-                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding() / 2) // Less padding since it's floating
+                    startDestination = startDest,
+                    modifier = Modifier.padding(bottom = if (currentRoute == "onboarding") 0.dp else innerPadding.calculateBottomPadding())
                 ) {
+                    composable("onboarding") {
+                        OnboardingScreen(onComplete = {
+                            prefs.edit().putBoolean("onboarding_completed", true).apply()
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        })
+                    }
                     composable(Screen.Home.route) { 
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { HomeScreen(navController) }
                     }

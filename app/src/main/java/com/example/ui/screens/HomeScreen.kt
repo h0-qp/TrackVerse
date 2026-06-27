@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +35,10 @@ import com.example.viewmodel.HomeViewModel
 
 import androidx.compose.ui.res.stringResource
 import com.example.viewmodel.WatchlistViewModel
+
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -58,15 +64,20 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     val totalMovies = watchlist.count { it.name == null }.toString()
     val totalWatchedEpisodes = watchedCounts.values.sum().toString()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp)
-            .windowInsetsPadding(WindowInsets.statusBars)
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+        isRefreshing = isLoading,
+        onRefresh = { viewModel.fetchHomeData() },
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
-        // App Bar
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
+                .windowInsetsPadding(WindowInsets.statusBars)
+        ) {
+            // App Bar
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -117,12 +128,34 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
 
         // Quick Stats Summary
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            StatCard(totalShows, stringResource(R.string.shows), Modifier.weight(1f))
-            StatCard(totalMovies, stringResource(R.string.movies).uppercase(), Modifier.weight(1f))
-            StatCard(totalWatchedEpisodes, stringResource(R.string.episodes), Modifier.weight(1f))
+            StatCard(totalShows, stringResource(R.string.shows), Modifier.weight(1f).clickable { navController.navigate("statistics") })
+            StatCard(totalMovies, stringResource(R.string.movies).uppercase(), Modifier.weight(1f).clickable { navController.navigate("statistics") })
+            StatCard(totalWatchedEpisodes, stringResource(R.string.episodes), Modifier.weight(1f).clickable { navController.navigate("statistics") })
+        }
+        
+        // Genre Chips
+        val genres = listOf("Action", "Drama", "Sci-Fi", "Comedy", "Anime", "Thriller")
+        val context = androidx.compose.ui.platform.LocalContext.current
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(genres) { genre ->
+                Box(
+                    modifier = Modifier
+                        .background(SurfaceDark, CircleShape)
+                        .border(1.dp, BorderStroke, CircleShape)
+                        .clickable { 
+                            android.widget.Toast.makeText(context, "Filtering by $genre coming soon!", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(genre, color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                }
+            }
         }
 
         // Continue Watching Section
@@ -135,71 +168,169 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             Text(stringResource(R.string.view_all), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = BlueHighlight)
         }
 
-        // Hero Card
-        val heroShow = trendingShows.firstOrNull()
-        if (heroShow != null) {
-            Box(
+        // Hero Card Carousel
+        val heroShows = trendingShows.take(5)
+        if (heroShows.isNotEmpty()) {
+            val pagerState = rememberPagerState(pageCount = { heroShows.size })
+            
+            LaunchedEffect(pagerState) {
+                while (true) {
+                    delay(4000)
+                    val nextPage = (pagerState.currentPage + 1) % pagerState.pageCount
+                    pagerState.animateScrollToPage(nextPage)
+                }
+            }
+            
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 10f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(SurfaceDark)
                     .padding(bottom = 32.dp)
-            ) {
-                var imgModifier = Modifier.fillMaxSize().clickable {
-                    val isMovie = heroShow.title != null
-                    navController.navigate("details/${heroShow.id}/$isMovie?source=home-hero")
-                }
-                if (sharedTransitionScope != null && animatedVisibilityScope != null) {
-                    with(sharedTransitionScope) {
-                        imgModifier = imgModifier.sharedElement(
-                            state = rememberSharedContentState(key = "image-${heroShow.id}-home-hero"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> tween(durationMillis = 500) }
-                        )
-                    }
-                }
-
-                AsyncImage(
-                    model = "https://image.tmdb.org/t/p/w780${heroShow.backdropPath ?: heroShow.posterPath}",
-                    contentDescription = heroShow.displayTitle,
-                    modifier = imgModifier,
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-                // Gradient Overlay
+            ) { page ->
+                val heroShow = heroShows[page]
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f), Color.Black)
-                            )
-                        )
-                )
-                
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)
-                        .align(Alignment.BottomStart)
+                        .padding(horizontal = 4.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(SurfaceDark)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        Column {
-                            Text("★ ${heroShow.voteAverage?.toString()?.take(3) ?: stringResource(R.string.not_available)}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BlueLight)
-                            Text(heroShow.displayTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    var imgModifier = Modifier.fillMaxSize().clickable {
+                        val isMovie = heroShow.title != null
+                        navController.navigate("details/${heroShow.id}/$isMovie?source=home-hero-${page}")
+                    }
+                    if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                        with(sharedTransitionScope) {
+                            imgModifier = imgModifier.sharedElement(
+                                state = rememberSharedContentState(key = "image-${heroShow.id}-home-hero-${page}"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                            )
                         }
+                    }
+
+                    AsyncImage(
+                        model = "https://image.tmdb.org/t/p/w780${heroShow.backdropPath ?: heroShow.posterPath}",
+                        contentDescription = heroShow.displayTitle,
+                        modifier = imgModifier,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                    // Gradient Overlay
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.4f), Color.Black)
+                                )
+                            )
+                    )
+                    
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
+                            .align(Alignment.BottomStart)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Column {
+                                Text("★ ${heroShow.voteAverage?.toString()?.take(3) ?: stringResource(R.string.not_available)}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BlueLight)
+                                Text(heroShow.displayTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            ) {
+                                Text(stringResource(R.string.trending).uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Releasing Today Section
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        val releasingToday = watchlist.filter { show -> show.nextEpisodeToAir?.airDate == today }
+        
+        if (releasingToday.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.releasing_today), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+            }
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(releasingToday) { show ->
+                    AiRecItem(
+                        show = show,
+                        watchlistViewModel = watchlistViewModel,
+                        modifier = Modifier.width(120.dp).clickable {
+                            navController.navigate("details/${show.id}/false?source=home-releasing")
+                        }
+                    )
+                }
+            }
+        }
+        
+        // Continue Watching
+        val continueWatching = watchlist.filter { show ->
+            val watched = watchedCounts[show.id] ?: 0
+            val total = show.numberOfEpisodes ?: 0
+            total > 0 && watched > 0 && watched < total
+        }
+        
+        if (continueWatching.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stringResource(R.string.continue_watching), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+            }
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(continueWatching) { show ->
+                    Column(modifier = Modifier.width(150.dp).clickable { navController.navigate("details/${show.id}/false") }) {
+                        val watched = watchedCounts[show.id] ?: 0
+                        val total = show.numberOfEpisodes ?: 1
+                        val progress = watched.toFloat() / total.toFloat()
+                        
                         Box(
                             modifier = Modifier
-                                .background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-                                .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                .fillMaxWidth()
+                                .aspectRatio(16f/9f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(SurfaceDark)
                         ) {
-                            Text(stringResource(R.string.trending).uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            AsyncImage(
+                                model = "https://image.tmdb.org/t/p/w300${show.backdropPath ?: show.posterPath}",
+                                contentDescription = show.displayTitle,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(show.displayTitle, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text("$watched / $total Episodes", color = TextSecondary, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                            color = BlueHighlight,
+                            trackColor = SurfaceDark
+                        )
                     }
                 }
             }
@@ -215,7 +346,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
 
         @OptIn(ExperimentalLayoutApi::class)
         FlowRow(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -223,9 +354,8 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                 val displays = topRatedShows.take(6)
                 displays.forEach { show ->
                     AiRecItem(
-                        id = show.id,
-                        title = show.displayTitle,
-                        imageUrl = "https://image.tmdb.org/t/p/w342${show.posterPath}",
+                        show = show,
+                        watchlistViewModel = watchlistViewModel,
                         modifier = Modifier.widthIn(min = 100.dp, max = 150.dp).weight(1f).clickable {
                             val isMovie = show.title != null
                             navController.navigate("details/${show.id}/$isMovie?source=home-grid")
@@ -233,11 +363,50 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     )
                 }
             } else if (isLoading) {
-                 CircularProgressIndicator(color = BlueHighlight, modifier = Modifier.align(Alignment.CenterVertically))
+                 repeat(3) {
+                     ShimmerAiRecItem(modifier = Modifier.widthIn(min = 100.dp, max = 150.dp).weight(1f))
+                 }
             } else if (error != null) {
                  Text("Error: $error", color = ErrorColor, fontSize = 12.sp)
             }
         }
+        
+        val topRatedMovies by viewModel.topRatedMovies.collectAsState()
+        
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(stringResource(R.string.top_rated_movies), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+        }
+
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (topRatedMovies.isNotEmpty()) {
+                val displays = topRatedMovies.take(6)
+                displays.forEach { show ->
+                    AiRecItem(
+                        show = show,
+                        watchlistViewModel = watchlistViewModel,
+                        modifier = Modifier.widthIn(min = 100.dp, max = 150.dp).weight(1f).clickable {
+                            val isMovie = show.title != null
+                            navController.navigate("details/${show.id}/$isMovie?source=home-grid-movies")
+                        }
+                    )
+                }
+            } else if (isLoading) {
+                 repeat(3) {
+                     ShimmerAiRecItem(modifier = Modifier.widthIn(min = 100.dp, max = 150.dp).weight(1f))
+                 }
+            } else if (error != null) {
+                 Text("Error: $error", color = ErrorColor, fontSize = 12.sp)
+            }
+        }
+    }
     }
 }
 
@@ -257,11 +426,49 @@ fun StatCard(value: String, label: String, modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
+fun ShimmerAiRecItem(modifier: Modifier = Modifier) {
+    val transition = androidx.compose.animation.core.rememberInfiniteTransition()
+    val translateAnim by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+        )
+    )
+    val brush = Brush.linearGradient(
+        colors = listOf(SurfaceDark, Color.LightGray.copy(alpha = 0.2f), SurfaceDark),
+        start = androidx.compose.ui.geometry.Offset(10f, 10f),
+        end = androidx.compose.ui.geometry.Offset(translateAnim, translateAnim)
+    )
+
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(brush)
+        )
+        Box(
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .fillMaxWidth(0.7f)
+                .height(14.dp)
+                .background(brush, RoundedCornerShape(4.dp))
+        )
+    }
+}
+
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun AiRecItem(id: Int, title: String, imageUrl: String, modifier: Modifier = Modifier) {
+fun AiRecItem(show: TmdbShow, watchlistViewModel: WatchlistViewModel, modifier: Modifier = Modifier) {
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
+    val watchlist by watchlistViewModel.watchlist.collectAsState()
+    val isInWatchlist = watchlist.any { it.id == show.id }
 
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
@@ -276,7 +483,7 @@ fun AiRecItem(id: Int, title: String, imageUrl: String, modifier: Modifier = Mod
             if (sharedTransitionScope != null && animatedVisibilityScope != null) {
                 with(sharedTransitionScope) {
                     imgModifier = imgModifier.sharedElement(
-                        state = rememberSharedContentState(key = "image-$id-home-grid"),
+                        state = rememberSharedContentState(key = "image-${show.id}-home-grid"),
                         animatedVisibilityScope = animatedVisibilityScope,
                         boundsTransform = { _, _ -> tween(durationMillis = 500) }
                     )
@@ -284,15 +491,34 @@ fun AiRecItem(id: Int, title: String, imageUrl: String, modifier: Modifier = Mod
             }
 
             AsyncImage(
-                model = imageUrl,
-                contentDescription = title,
+                model = "https://image.tmdb.org/t/p/w342${show.posterPath}",
+                contentDescription = show.displayTitle,
                 modifier = imgModifier,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                 colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0.2f) })
             )
+            
+            // Quick Add Button
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .size(28.dp)
+                    .background(if (isInWatchlist) BlueHighlight else Color.Black.copy(alpha = 0.5f), CircleShape)
+                    .clickable {
+                        if (isInWatchlist) {
+                            watchlistViewModel.removeFromWatchlist(show.id)
+                        } else {
+                            watchlistViewModel.addToWatchlist(show, isTracking = true)
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(if (isInWatchlist) "✓" else "+", color = Color.White, fontWeight = FontWeight.Bold)
+            }
         }
         Text(
-            text = title,
+            text = show.displayTitle,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             color = TextSecondary,

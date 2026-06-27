@@ -16,7 +16,7 @@ data class Review(
     val userId: String = "",
     val userName: String = "",
     val showId: Int = 0,
-    val isMovieItem: Boolean = false,
+    val itemIsMovie: Boolean = false,
     val rating: Float = 0f,
     val text: String = "",
     val timestamp: Long = System.currentTimeMillis()
@@ -45,7 +45,7 @@ class ReviewViewModel : ViewModel() {
 
                 val items = snapshot.documents.mapNotNull { doc ->
                     doc.toObject(Review::class.java)?.copy(id = doc.id)
-                }.filter { it.isMovieItem == isMovie }.sortedByDescending { it.timestamp }
+                }.filter { it.itemIsMovie == isMovie }.sortedByDescending { it.timestamp }
                 
                 _reviews.value = items
                 
@@ -79,7 +79,7 @@ class ReviewViewModel : ViewModel() {
                     userId = user.uid,
                     userName = user.displayName ?: user.email?.substringBefore("@") ?: "Anonymous",
                     showId = showId,
-                    isMovieItem = isMovie,
+                    itemIsMovie = isMovie,
                     rating = rating,
                     text = text,
                     timestamp = System.currentTimeMillis()

@@ -26,13 +26,16 @@ import com.example.R
 @Composable
 fun SettingsScreen(navController: NavController) {
     val context = LocalContext.current
-    val currentLang = context.resources.configuration.locales.get(0).language
-    var selectedLanguage by remember { mutableStateOf(if (currentLang == "ar") "العربية" else "English") }
+    val prefs = context.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+    val currentLangCode = prefs.getString("language", "en") ?: "en"
+    var selectedLanguage by remember { mutableStateOf(if (currentLangCode == "ar") "العربية" else "English") }
     var notificationsEnabled by remember { mutableStateOf(true) }
 
     fun changeLanguage(language: String) {
         selectedLanguage = language
         val localeCode = if (language == "العربية") "ar" else "en"
+        prefs.edit().putString("language", localeCode).apply()
+        
         val locale = Locale(localeCode)
         Locale.setDefault(locale)
         val config = context.resources.configuration
@@ -101,8 +104,8 @@ fun SettingsScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
             
-            Text("About", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = BlueHighlight, modifier = Modifier.padding(bottom = 16.dp))
-            Text("TrackVerse v1.0.0", fontSize = 16.sp, color = TextPrimary)
+            Text(androidx.compose.ui.res.stringResource(R.string.about), fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = BlueHighlight, modifier = Modifier.padding(bottom = 16.dp))
+            Text(androidx.compose.ui.res.stringResource(R.string.app_name) + " v1.0.0", fontSize = 16.sp, color = TextPrimary)
         }
     }
 }

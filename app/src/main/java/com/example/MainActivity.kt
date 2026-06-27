@@ -10,6 +10,17 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 
 class MainActivity : ComponentActivity() {
+  override fun attachBaseContext(newBase: android.content.Context) {
+    val prefs = newBase.getSharedPreferences("app_settings", android.content.Context.MODE_PRIVATE)
+    val lang = prefs.getString("language", "en") ?: "en"
+    val locale = java.util.Locale(lang)
+    java.util.Locale.setDefault(locale)
+    val config = android.content.res.Configuration(newBase.resources.configuration)
+    config.setLocale(locale)
+    val context = newBase.createConfigurationContext(config)
+    super.attachBaseContext(context)
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     

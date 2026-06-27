@@ -45,6 +45,30 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
     var mainTabIndex by remember { mutableStateOf(0) } // 0: Series, 1: Movies
     var seriesTabIndex by remember { mutableStateOf(1) } // 0: Upcoming, 1: Watchlist
 
+    var showFilterSortDialog by remember { mutableStateOf(false) }
+    var sortBy by remember { mutableStateOf("Title") }
+    var sortOrder by remember { mutableStateOf("Ascending") }
+
+    val sortedSeriesWatchlist = remember(seriesWatchlist, sortBy, sortOrder) {
+        var list = seriesWatchlist
+        list = when (sortBy) {
+            "Rating" -> list.sortedBy { it.voteAverage }
+            else -> list.sortedBy { it.displayTitle }
+        }
+        if (sortOrder == "Descending") list = list.reversed()
+        list
+    }
+
+    val sortedMoviesWatchlist = remember(moviesWatchlist, sortBy, sortOrder) {
+        var list = moviesWatchlist
+        list = when (sortBy) {
+            "Rating" -> list.sortedBy { it.voteAverage }
+            else -> list.sortedBy { it.displayTitle }
+        }
+        if (sortOrder == "Descending") list = list.reversed()
+        list
+    }
+
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
 
@@ -113,6 +137,14 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                     onClick = { seriesTabIndex = 1 },
                     text = { Text(stringResource(R.string.watchlist_tab), fontWeight = FontWeight.Bold) }
                 )
+            }
+
+            if (seriesTabIndex == 1) {
+                Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = { showFilterSortDialog = true }) {
+                        Text("Sort: $sortBy ($sortOrder)", color = BlueHighlight)
+                    }
+                }
             }
 
             if (seriesTabIndex == 0) {
@@ -210,7 +242,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                 }
             }
         } else {
-            val (finishedShows, activeShows) = seriesWatchlist.partition { show ->
+            val (finishedShows, activeShows) = sortedSeriesWatchlist.partition { show ->
                 val watchedCount = watchedList[show.id]?.size ?: 0
                 val totalEpisodes = show.numberOfEpisodes ?: 0
                 totalEpisodes > 0 && watchedCount >= totalEpisodes
@@ -354,11 +386,16 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
             }
         } // End of seriesTabIndex else block
         } else if (mainTabIndex == 1) {
+            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { showFilterSortDialog = true }) {
+                    Text("Sort: $sortBy ($sortOrder)", color = BlueHighlight)
+                }
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(moviesWatchlist) { show ->
+                items(sortedMoviesWatchlist) { show ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -399,6 +436,47 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                         }
                     }
                 }
+            }
+        }
+    }
+
+    if (showFilterSortDialog) {
+        @OptIn(ExperimentalMaterial3Api::class)
+        ModalBottomSheet(
+            onDismissRequest = { showFilterSortDialog = false },
+            containerColor = SurfaceDark
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text("Sort By", color = TextPrimary, fontWeight = FontWeight.Bold)
+                Row {
+                    RadioButton(selected = sortBy == "Title", onClick = { sortBy = "Title" })
+                    Text("Title", color = TextPrimary, modifier = Modifier.align(Alignment.CenterVertically).padding(end = 16.dp))
+                    RadioButton(selected = sortBy == "Rating", onClick = { sortBy = "Rating" })
+                    Text("Rating", color = TextPrimary, modifier = Modifier.align(Alignment.CenterVertically))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Sort Order", color = TextPrimary, fontWeight = FontWeight.Bold)
+                Row {
+                    RadioButton(selected = sortOrder == "Ascending", onClick = { sortOrder = "Ascending" })
+                    Text("Ascending", color = TextPrimary, modifier = Modifier.align(Alignment.CenterVertically).padding(end = 16.dp))
+                    RadioButton(selected = sortOrder == "Descending", onClick = { sortOrder = "Descending" })
+                    Text("Descending", color = TextPrimary, modifier = Modifier.align(Alignment.CenterVertically))
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = { showFilterSortDialog = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = BlueHighlight)
+                ) {
+                    Text("Apply", color = Color.White)
+                }
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

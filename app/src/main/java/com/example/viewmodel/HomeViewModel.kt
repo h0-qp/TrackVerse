@@ -17,6 +17,9 @@ class HomeViewModel : ViewModel() {
     private val _topRatedShows = MutableStateFlow<List<TmdbShow>>(emptyList())
     val topRatedShows: StateFlow<List<TmdbShow>> = _topRatedShows
 
+    private val _topRatedMovies = MutableStateFlow<List<TmdbShow>>(emptyList())
+    val topRatedMovies: StateFlow<List<TmdbShow>> = _topRatedMovies
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -29,7 +32,7 @@ class HomeViewModel : ViewModel() {
         fetchHomeData()
     }
 
-    private fun fetchHomeData() {
+    fun fetchHomeData() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -45,6 +48,9 @@ class HomeViewModel : ViewModel() {
 
                 val topRatedResponse = ApiClient.tmdbService.getTopRatedShows()
                 _topRatedShows.value = topRatedResponse.results
+
+                val topRatedMoviesResponse = ApiClient.tmdbService.getTopRatedMovies()
+                _topRatedMovies.value = topRatedMoviesResponse.results
 
             } catch (e: Exception) {
                 _error.value = e.localizedMessage ?: "An error occurred while fetching data"

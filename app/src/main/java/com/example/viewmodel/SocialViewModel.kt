@@ -17,15 +17,25 @@ data class UserProfile(
     val displayName: String = ""
 )
 
+data class SocialComment(
+    val userId: String = "",
+    val userName: String = "",
+    val text: String = "",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 data class SocialActivity(
     val id: String = "",
     val userId: String = "",
     val userName: String = "",
-    val actionType: String = "", // "WATCHED", "ADDED_WATCHLIST"
+    val actionType: String = "", // "WATCHED", "ADDED_WATCHLIST", "SUGGESTED"
     val showId: Int = 0,
     val showName: String = "",
     val details: String = "", // S01E03
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val likes: List<String> = emptyList(),
+    val comments: List<SocialComment> = emptyList(),
+    val targetUserId: String = "" // For suggestions
 )
 
 class SocialViewModel : ViewModel() {
@@ -37,9 +47,17 @@ class SocialViewModel : ViewModel() {
 
     private val _following = MutableStateFlow<List<String>>(emptyList())
     val following: StateFlow<List<String>> = _following.asStateFlow()
+
+    private val _followingProfiles = MutableStateFlow<List<UserProfile>>(emptyList())
+    val followingProfiles: StateFlow<List<UserProfile>> = _followingProfiles.asStateFlow()
     
     private val _feed = MutableStateFlow<List<SocialActivity>>(emptyList())
     val feed: StateFlow<List<SocialActivity>> = _feed.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    val currentUserId: String? get() = auth.currentUser?.uid
 
     init {
         saveUserProfile()
@@ -86,6 +104,17 @@ class SocialViewModel : ViewModel() {
                 val snap = db.collection("users").document(uid).collection("following").get().await()
                 val followingIds = snap.documents.map { it.id }
                 _following.value = followingIds
+                
+                if (followingIds.isNotEmpty()) {
+                    val profiles = mutableListOf<UserProfile>()
+                    for (id in followingIds) {
+                        val doc = db.collection("users").document(id).get().await()
+                        doc.toObject(UserProfile::class.java)?.let { profiles.add(it) }
+                    }
+                    _followingProfiles.value = profiles
+                } else {
+                    _followingProfiles.value = emptyList()
+                }
             } catch (e: Exception) {}
         }
     }
@@ -108,6 +137,7 @@ class SocialViewModel : ViewModel() {
 
     fun loadFeed() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val snap = db.collection("activity")
                     .orderBy("timestamp", Query.Direction.DESCENDING)
@@ -119,10 +149,13 @@ class SocialViewModel : ViewModel() {
                 }
                 _feed.value = activities
             } catch (e: Exception) { e.printStackTrace() }
+            finally {
+                _isLoading.value = false
+            }
         }
     }
 
-    fun publishActivity(actionType: String, showId: Int, showName: String, details: String) {
+    fun publishActivity(actionType: String, showId: Int, showName: String, details: String, targetUserId: String = "") {
         val user = auth.currentUser ?: return
         viewModelScope.launch {
             try {
@@ -132,11 +165,55 @@ class SocialViewModel : ViewModel() {
                     actionType = actionType,
                     showId = showId,
                     showName = showName,
-                    details = details
+                    details = details,
+                    targetUserId = targetUserId
                 )
                 db.collection("activity").add(act).await()
                 loadFeed()
             } catch (e: Exception) {}
+        }
+    }
+
+    fun suggestShow(showId: Int, showName: String, targetUserId: String, targetUserName: String) {
+        publishActivity("SUGGESTED", showId, showName, "Suggested this to $targetUserName", targetUserId)
+    }
+
+    fun toggleLike(activityId: String) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val docRef = db.collection("activity").document(activityId)
+                val doc = docRef.get().await()
+                val activity = doc.toObject(SocialActivity::class.java) ?: return@launch
+                
+                val newLikes = if (activity.likes.contains(user.uid)) {
+                    activity.likes - user.uid
+                } else {
+                    activity.likes + user.uid
+                }
+                docRef.update("likes", newLikes).await()
+                loadFeed()
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    fun addComment(activityId: String, text: String) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val docRef = db.collection("activity").document(activityId)
+                val doc = docRef.get().await()
+                val activity = doc.toObject(SocialActivity::class.java) ?: return@launch
+                
+                val comment = SocialComment(
+                    userId = user.uid,
+                    userName = user.displayName ?: user.email?.substringBefore("@") ?: "User",
+                    text = text
+                )
+                val newComments = activity.comments + comment
+                docRef.update("comments", newComments).await()
+                loadFeed()
+            } catch (e: Exception) { e.printStackTrace() }
         }
     }
 }

@@ -45,6 +45,32 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         return googleSignInClient.signInIntent
     }
 
+    fun updateUsername(newName: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val user = auth.currentUser ?: return@launch
+                val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                    .setDisplayName(newName)
+                    .build()
+                user.updateProfile(profileUpdates).await()
+                
+                // Also update in Firestore if using it
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                db.collection("users").document(user.uid).update("displayName", newName).await()
+                
+                // Reload user to update flow
+                auth.currentUser?.reload()?.await()
+                _user.value = auth.currentUser
+                _error.value = null
+            } catch (e: Exception) {
+                _error.value = e.localizedMessage
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     fun handleGoogleSignInResult(intent: Intent?) {
         _isLoading.value = true
         viewModelScope.launch {

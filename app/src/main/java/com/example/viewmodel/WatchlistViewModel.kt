@@ -115,7 +115,11 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
                         name = nextEpisodeMap["name"] as? String,
                         airDate = nextEpisodeMap["airDate"] as? String,
                         episodeNumber = (nextEpisodeMap["episodeNumber"] as? Number)?.toInt(),
-                        seasonNumber = (nextEpisodeMap["seasonNumber"] as? Number)?.toInt()
+                        seasonNumber = (nextEpisodeMap["seasonNumber"] as? Number)?.toInt(),
+                        stillPath = null,
+                        overview = null,
+                        voteAverage = null,
+                        runtime = null
                     )
                 } catch (e: Exception) { 
                     null 

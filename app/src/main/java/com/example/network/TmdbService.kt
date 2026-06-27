@@ -13,9 +13,28 @@ interface TmdbService {
     @GET("3/tv/top_rated")
     suspend fun getTopRatedShows(): TmdbResponse
     
+    @GET("3/movie/top_rated")
+    suspend fun getTopRatedMovies(): TmdbResponse
+    
     @GET("3/tv/popular")
     suspend fun getPopularShows(): TmdbResponse
     
+    @GET("3/discover/tv")
+    suspend fun discoverTv(
+        @Query("with_genres") withGenres: String? = null,
+        @Query("first_air_date_year") firstAirDateYear: String? = null,
+        @Query("vote_average.gte") voteAverageGte: Float? = null,
+        @Query("sort_by") sortBy: String? = null
+    ): TmdbResponse
+
+    @GET("3/discover/movie")
+    suspend fun discoverMovie(
+        @Query("with_genres") withGenres: String? = null,
+        @Query("primary_release_year") primaryReleaseYear: String? = null,
+        @Query("vote_average.gte") voteAverageGte: Float? = null,
+        @Query("sort_by") sortBy: String? = null
+    ): TmdbResponse
+
     @GET("3/search/multi")
     suspend fun search(
         @Query("query") query: String
