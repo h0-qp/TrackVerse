@@ -47,13 +47,14 @@ class DetailsViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = ApiClient.tmdbService.getSeasonDetails(tvId, seasonNumber)
-                if (response.episodes != null) {
-                    val current = _seasonDetails.value.toMutableMap()
-                    current[seasonNumber] = response.episodes
-                    _seasonDetails.value = current
-                }
+                val current = _seasonDetails.value.toMutableMap()
+                current[seasonNumber] = response.episodes ?: emptyList()
+                _seasonDetails.value = current
             } catch (e: Exception) {
                 // handle error silently for season episodes
+                val current = _seasonDetails.value.toMutableMap()
+                current[seasonNumber] = emptyList()
+                _seasonDetails.value = current
             }
         }
     }

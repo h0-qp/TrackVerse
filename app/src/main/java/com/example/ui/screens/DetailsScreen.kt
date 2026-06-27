@@ -581,10 +581,13 @@ fun DetailsScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 val episodes = seasonDetailsMap[season.seasonNumber]
                                 if (episodes != null) {
-                                    episodes.forEach { episode ->
-                                        val isWatched = watchedEpisodeIds.contains(episode.id)
-                                        val airDateStr = episode.airDate
-                                        var daysUntil = -1
+                                    if (episodes.isEmpty()) {
+                                        Text(androidx.compose.ui.res.stringResource(com.example.R.string.tba), color = TextSecondary, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp))
+                                    } else {
+                                        episodes.forEach { episode ->
+                                            val isWatched = watchedEpisodeIds.contains(episode.id)
+                                            val airDateStr = episode.airDate
+                                            var daysUntil = -1
                                         var hoursUntil = -1
                                         if (airDateStr?.isNotEmpty() == true) {
                                             try {
@@ -667,6 +670,7 @@ fun DetailsScreen(
                                             }
                                         }
                                         HorizontalDivider(color = BorderStroke)
+                                    }
                                     }
                                 } else {
                                     CircularProgressIndicator(color = dynamicThemeColor, modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
