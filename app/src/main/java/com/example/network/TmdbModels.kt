@@ -11,23 +11,23 @@ data class TmdbResponse(
 @JsonClass(generateAdapter = true)
 data class TmdbEpisode(
     @Json(name = "id") val id: Int,
-    @Json(name = "name") val name: String?,
-    @Json(name = "air_date") val airDate: String?,
-    @Json(name = "episode_number") val episodeNumber: Int?,
-    @Json(name = "season_number") val seasonNumber: Int?,
-    @Json(name = "still_path") val stillPath: String?,
-    @Json(name = "overview") val overview: String?,
-    @Json(name = "vote_average") val voteAverage: Double?,
-    @Json(name = "runtime") val runtime: Int?
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "air_date") val airDate: String? = null,
+    @Json(name = "episode_number") val episodeNumber: Int? = null,
+    @Json(name = "season_number") val seasonNumber: Int? = null,
+    @Json(name = "still_path") val stillPath: String? = null,
+    @Json(name = "overview") val overview: String? = null,
+    @Json(name = "vote_average") val voteAverage: Double? = null,
+    @Json(name = "runtime") val runtime: Int? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class TmdbSeason(
     @Json(name = "id") val id: Int,
-    @Json(name = "name") val name: String?,
-    @Json(name = "season_number") val seasonNumber: Int?,
-    @Json(name = "episode_count") val episodeCount: Int?,
-    @Json(name = "air_date") val airDate: String?
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "season_number") val seasonNumber: Int? = null,
+    @Json(name = "episode_count") val episodeCount: Int? = null,
+    @Json(name = "air_date") val airDate: String? = null
 )
 
 @JsonClass(generateAdapter = true)

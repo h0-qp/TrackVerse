@@ -320,7 +320,7 @@ fun DetailsScreen(
                         text = "★ ${show?.voteAverage?.toString()?.take(3) ?: androidx.compose.ui.res.stringResource(com.example.R.string.not_available)}",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = dynamicThemeColor
+                        color = Color(0xFFFFC107)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Box(
@@ -443,7 +443,7 @@ fun DetailsScreen(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isInWatchlistCheck) SurfaceDark else dynamicThemeColor,
+                        containerColor = if (isInWatchlistCheck) SurfaceDark else BlueHighlight,
                         contentColor = TextPrimary
                     ),
                     shape = RoundedCornerShape(16.dp),
@@ -475,7 +475,7 @@ fun DetailsScreen(
                                 ) {
                                     for (i in 1..5) {
                                         val icon = if (i <= dialogRating) Icons.Filled.Star else Icons.Outlined.Star
-                                        val tint = if (i <= dialogRating) Color(0xFFFFD700) else TextTertiary
+                                        val tint = if (i <= dialogRating) Color(0xFFFFC107) else TextTertiary
                                         Icon(
                                             imageVector = icon,
                                             contentDescription = "Rate $i",
@@ -724,7 +724,7 @@ fun DetailsScreen(
                                 Icon(
                                     imageVector = if (i <= userRating) Icons.Filled.Star else Icons.Outlined.Star,
                                     contentDescription = "Star $i",
-                                    tint = if (i <= userRating) Color(0xFFFFD700) else TextTertiary,
+                                    tint = if (i <= userRating) Color(0xFFFFC107) else TextTertiary,
                                     modifier = Modifier
                                         .size(32.dp)
                                         .clickable { userRating = i.toFloat() }
@@ -770,7 +770,7 @@ fun DetailsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 16.dp)) {
                         Text("Average Rating:", color = TextSecondary, fontSize = 14.sp)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(18.dp))
+                        Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(18.dp))
                         Text(String.format("%.1f", averageRating), color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Text(" (${reviews.size})", color = TextTertiary, fontSize = 14.sp)
                     }
@@ -798,7 +798,7 @@ fun DetailsScreen(
                             Column {
                                 Text(review.userName, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(12.dp))
+                                    Icon(Icons.Filled.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
                                     Text(review.rating.toString(), color = TextSecondary, fontSize = 12.sp)
                                 }
                             }

@@ -66,7 +66,6 @@ fun MainScreen() {
     val items = listOf(
         Screen.Home,
         Screen.Discover,
-        Screen.Search,
         Screen.Social,
         Screen.Statistics,
         Screen.Profile
@@ -155,9 +154,6 @@ fun MainScreen() {
                     }
                     composable(Screen.Discover.route) { 
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { DiscoverScreen(navController) }
-                    }
-                    composable(Screen.Search.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SearchScreen(navController) }
                     }
                     composable(Screen.Social.route) { 
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SocialScreen() }

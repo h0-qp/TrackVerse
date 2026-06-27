@@ -33,6 +33,13 @@ import com.example.network.TmdbShow
 import com.example.ui.theme.*
 import com.example.viewmodel.HomeViewModel
 
+import com.example.viewmodel.SearchViewModel
+import com.example.ui.screens.SearchResultItem
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.res.stringResource
 import com.example.viewmodel.WatchlistViewModel
 
@@ -63,6 +70,11 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     val totalShows = watchlist.count { it.title == null }.toString()
     val totalMovies = watchlist.count { it.name == null }.toString()
     val totalWatchedEpisodes = watchedCounts.values.sum().toString()
+
+    val searchViewModel: SearchViewModel = viewModel()
+    val query by searchViewModel.query.collectAsState()
+    val searchResults by searchViewModel.searchResults.collectAsState()
+    val isSearching by searchViewModel.isLoading.collectAsState()
 
     @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
     androidx.compose.material3.pulltorefresh.PullToRefreshBox(
@@ -126,15 +138,61 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             }
         }
 
-        // Quick Stats Summary
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StatCard(totalShows, stringResource(R.string.shows), Modifier.weight(1f).clickable { navController.navigate("statistics") })
-            StatCard(totalMovies, stringResource(R.string.movies).uppercase(), Modifier.weight(1f).clickable { navController.navigate("statistics") })
-            StatCard(totalWatchedEpisodes, stringResource(R.string.episodes), Modifier.weight(1f).clickable { navController.navigate("statistics") })
-        }
+        // Search Bar
+        TextField(
+            value = query,
+            onValueChange = { searchViewModel.onQueryChange(it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .border(1.dp, BorderStroke, RoundedCornerShape(16.dp)),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = SurfaceDark,
+                unfocusedContainerColor = SurfaceDark,
+                focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary
+            ),
+            placeholder = { Text("Movies, Shows, etc...", color = TextTertiary) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = TextTertiary) }
+        )
+        
+        if (query.isNotEmpty()) {
+            if (isSearching) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = BlueHighlight)
+                }
+            } else if (searchResults.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("No results found.", color = TextTertiary, fontSize = 16.sp)
+                }
+            } else {
+                // Search Results Grid (we use chunked to simulate grid in verticalScroll)
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    val chunks = searchResults.chunked(3)
+                    chunks.forEach { rowItems ->
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            rowItems.forEach { show ->
+                                SearchResultItem(
+                                    show = show,
+                                    sourceKey = "search",
+                                    modifier = Modifier.weight(1f).clickable {
+                                        val isMovie = show.title != null
+                                        navController.navigate("details/${show.id}/$isMovie?source=search")
+                                    }
+                                )
+                            }
+                            // Fill remaining space if chunk is less than 3
+                            repeat(3 - rowItems.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
         
         // Genre Chips
         val genres = listOf("Action", "Drama", "Sci-Fi", "Comedy", "Anime", "Thriller")
@@ -239,7 +297,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                             verticalAlignment = Alignment.Bottom
                         ) {
                             Column {
-                                Text("★ ${heroShow.voteAverage?.toString()?.take(3) ?: stringResource(R.string.not_available)}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = BlueLight)
+                                Text("★ ${heroShow.voteAverage?.toString()?.take(3) ?: stringResource(R.string.not_available)}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFFC107))
                                 Text(heroShow.displayTitle, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                             }
                             Box(
@@ -406,6 +464,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                  Text("Error: $error", color = ErrorColor, fontSize = 12.sp)
             }
         }
+        } // Close else for query.isNotEmpty()
     }
     }
 }
@@ -524,6 +583,60 @@ fun AiRecItem(show: TmdbShow, watchlistViewModel: WatchlistViewModel, modifier: 
             color = TextSecondary,
             modifier = Modifier.padding(top = 8.dp),
             textAlign = TextAlign.Center
+        )
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun SearchResultItem(show: TmdbShow, sourceKey: String, modifier: Modifier = Modifier) {
+    val sharedTransitionScope = LocalSharedTransitionScope.current
+    val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(SurfaceDark)
+                .border(1.dp, BorderStroke, RoundedCornerShape(12.dp))
+        ) {
+            var imgModifier = Modifier.fillMaxSize()
+            if (sharedTransitionScope != null && animatedVisibilityScope != null) {
+                with(sharedTransitionScope) {
+                    imgModifier = imgModifier.sharedElement(
+                        state = rememberSharedContentState(key = "image-${show.id}-$sourceKey"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                    )
+                }
+            }
+
+            AsyncImage(
+                model = "https://image.tmdb.org/t/p/w342${show.posterPath}",
+                contentDescription = show.displayTitle,
+                modifier = imgModifier,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+        }
+        Text(
+            text = show.displayTitle,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = TextPrimary,
+            modifier = Modifier.padding(top = 8.dp),
+            textAlign = TextAlign.Center,
+            maxLines = 2
+        )
+        Text(
+            text = "★ ${show.voteAverage ?: "N/A"}",
+            fontSize = 10.sp,
+            color = Color(0xFFFFC107),
+            modifier = Modifier.padding(top = 2.dp)
         )
     }
 }
