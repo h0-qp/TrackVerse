@@ -11,7 +11,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.tasks.await
+import androidx.lifecycle.viewModelScope
 
 class WatchlistViewModel(application: Application) : AndroidViewModel(application) {
     private val db = FirebaseFirestore.getInstance()
@@ -26,8 +29,50 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
     private val _watchedEpisodesList = MutableStateFlow<Map<Int, List<Int>>>(emptyMap())
     val watchedEpisodesList: StateFlow<Map<Int, List<Int>>> = _watchedEpisodesList.asStateFlow()
 
+    private val _unwatchedEpisodes = MutableStateFlow<List<Pair<com.example.network.TmdbShow, com.example.network.TmdbEpisode>>>(emptyList())
+    val unwatchedEpisodes: StateFlow<List<Pair<com.example.network.TmdbShow, com.example.network.TmdbEpisode>>> = _unwatchedEpisodes.asStateFlow()
+
     private var authListener: FirebaseAuth.AuthStateListener? = null
     private var listenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    private var episodesFetchJob: kotlinx.coroutines.Job? = null
+
+    fun loadAllUnwatchedEpisodes() {
+        val currentWatchlist = _watchlist.value.filter { it.title == null }
+        val watched = _watchedEpisodesList.value
+
+        episodesFetchJob?.cancel()
+        episodesFetchJob = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val scope = this
+            val allEps = java.util.concurrent.ConcurrentLinkedQueue<Pair<com.example.network.TmdbShow, com.example.network.TmdbEpisode>>()
+            val semaphore = kotlinx.coroutines.sync.Semaphore(10)
+            
+            val deferreds = currentWatchlist.flatMap { show ->
+                val numSeasons = show.numberOfSeasons ?: 1
+                (1..numSeasons).map { s ->
+                    scope.async {
+                        semaphore.acquire()
+                        try {
+                            val seasonResp = com.example.network.ApiClient.tmdbService.getSeasonDetails(show.id, s)
+                            seasonResp.episodes?.forEach { ep ->
+                                if (watched[show.id]?.contains(ep.id) != true) {
+                                    if (!ep.airDate.isNullOrEmpty()) {
+                                        allEps.add(Pair(show, ep))
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // ignore
+                        } finally {
+                            semaphore.release()
+                        }
+                    }
+                }
+            }
+            deferreds.awaitAll()
+            
+            _unwatchedEpisodes.value = allEps.toList()
+        }
+    }
 
     init {
         // مراقبة الدخول لكي نجلب مسلسلات المستخدم من السيرفر مباشرة

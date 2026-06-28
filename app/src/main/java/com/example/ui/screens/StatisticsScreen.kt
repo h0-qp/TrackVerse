@@ -44,12 +44,17 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
     val seriesWatchlist = watchlist.filter { it.title == null }
     val moviesWatchlist = watchlist.filter { it.title != null }
     val watchedList by watchlistViewModel.watchedEpisodesList.collectAsState()
+    val unwatchedEpisodes by watchlistViewModel.unwatchedEpisodes.collectAsState()
     var mainTabIndex by remember { mutableStateOf(0) } // 0: Series, 1: Movies
     var seriesTabIndex by remember { mutableStateOf(1) } // 0: Upcoming, 1: Watchlist
 
     var showFilterSortDialog by remember { mutableStateOf(false) }
     var sortBy by remember { mutableStateOf("Title") }
     var sortOrder by remember { mutableStateOf("Ascending") }
+
+    LaunchedEffect(seriesWatchlist, watchedList) {
+        watchlistViewModel.loadAllUnwatchedEpisodes()
+    }
 
     val sortedSeriesWatchlist = remember(seriesWatchlist, sortBy, sortOrder) {
         var list = seriesWatchlist
@@ -78,20 +83,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
         watchlistViewModel.loadWatchlist() // explicit fallback execution
     }
 
-    val upcomingEpisodes = seriesWatchlist.flatMap { show ->
-        val eps = mutableListOf<Pair<TmdbShow, TmdbEpisode>>()
-        show.lastEpisodeToAir?.let { 
-            if (watchedList[show.id]?.contains(it.id) != true) {
-                eps.add(Pair(show, it))
-            }
-        }
-        show.nextEpisodeToAir?.let { 
-            if (watchedList[show.id]?.contains(it.id) != true) {
-                eps.add(Pair(show, it))
-            }
-        }
-        eps
-    }.distinctBy { it.second.id }.sortedBy { it.second.airDate }
+    val upcomingEpisodes = unwatchedEpisodes.sortedBy { it.second.airDate ?: "9999-12-31" }
 
     Column(
         modifier = Modifier
