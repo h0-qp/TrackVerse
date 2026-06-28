@@ -141,7 +141,11 @@ fun MainScreen() {
                 NavHost(
                     navController = navController,
                     startDestination = startDest,
-                    modifier = Modifier.padding(bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp)
+                    modifier = Modifier.padding(bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp),
+                    enterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) + slideIntoContainer(androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Start, androidx.compose.animation.core.tween(300)) },
+                    exitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300)) + slideOutOfContainer(androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Start, androidx.compose.animation.core.tween(300)) },
+                    popEnterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300)) + slideIntoContainer(androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.End, androidx.compose.animation.core.tween(300)) },
+                    popExitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300)) + slideOutOfContainer(androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.End, androidx.compose.animation.core.tween(300)) }
                 ) {
                     composable("onboarding") {
                         OnboardingScreen(onComplete = {

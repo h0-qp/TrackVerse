@@ -18,7 +18,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -84,13 +87,27 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
     }
 
     val upcomingEpisodes = unwatchedEpisodes.sortedBy { it.second.airDate ?: "9999-12-31" }
+    
+    var isRefreshing by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .windowInsetsPadding(WindowInsets.statusBars)
+    @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+    androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = { 
+            coroutineScope.launch { 
+                isRefreshing = true
+                watchlistViewModel.loadWatchlist()
+                watchlistViewModel.loadAllUnwatchedEpisodes()
+                kotlinx.coroutines.delay(1000)
+                isRefreshing = false 
+            } 
+        },
+        modifier = Modifier.fillMaxSize().background(Color.Black).windowInsetsPadding(WindowInsets.statusBars)
     ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
         TabRow(
             selectedTabIndex = mainTabIndex,
             containerColor = Color.Black,
@@ -217,23 +234,16 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                     item {
                         Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
                             val headerText = when {
-                                category == "yesterday" -> "البارحة" // stringResource(R.string.yesterday) if translated
-                                category == "today" -> "اليوم" // stringResource(R.string.today)
-                                category == "tomorrow" -> "غداً" // stringResource(R.string.tomorrow)
-                                category == "later" -> "لاحقاً" // stringResource(R.string.later)
+                                category == "yesterday" -> "البارحة"
+                                category == "today" -> "اليوم"
+                                category == "tomorrow" -> "غداً"
+                                category == "later" -> "لاحقاً"
                                 category.startsWith("past:") -> category.removePrefix("past:")
                                 category.startsWith("weekday:") -> category.removePrefix("weekday:")
                                 else -> category
                             }
-                            val translatedHeaderText = when (headerText) {
-                                stringResource(R.string.yesterday) -> "البارحة"
-                                stringResource(R.string.today) -> "اليوم"
-                                stringResource(R.string.tomorrow) -> "غداً"
-                                stringResource(R.string.later) -> "لاحقاً"
-                                else -> headerText
-                            }
                             Box(modifier = Modifier.background(Color(0xFF333333), RoundedCornerShape(16.dp)).padding(horizontal = 16.dp, vertical = 6.dp)) {
-                                Text(translatedHeaderText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                Text(headerText, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -307,15 +317,16 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                 // Status Checkbox
                                 Box(modifier = Modifier.padding(16.dp)) {
                                     val isWatched = watchedList[show.id]?.contains(episode.id) == true
-                                    androidx.compose.material3.IconButton(onClick = {
-                                        watchlistViewModel.toggleEpisodeWatched(show.id, episode.id)
-                                    }) {
-                                        Box(modifier = Modifier.size(24.dp).background(if (isWatched) Color.Gray else Color.White, androidx.compose.foundation.shape.CircleShape).border(1.dp, Color.Gray, androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) {
-                                            if (isWatched) {
-                                                Icon(androidx.compose.material.icons.Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                            } else {
-                                                Icon(androidx.compose.material.icons.Icons.Default.Check, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                                            }
+                                    val bgColor by androidx.compose.animation.animateColorAsState(if (isWatched) Color.Gray else Color.White)
+                                    val iconColor by androidx.compose.animation.animateColorAsState(if (isWatched) Color.White else Color.Gray)
+                                    val scale by androidx.compose.animation.core.animateFloatAsState(targetValue = if (isWatched) 1.2f else 1f, animationSpec = androidx.compose.animation.core.spring(dampingRatio = 0.5f))
+                                    
+                                    androidx.compose.material3.IconButton(
+                                        onClick = { watchlistViewModel.toggleEpisodeWatched(show.id, episode.id) },
+                                        modifier = Modifier.scale(scale)
+                                    ) {
+                                        Box(modifier = Modifier.size(24.dp).background(bgColor, androidx.compose.foundation.shape.CircleShape).border(1.dp, Color.Gray, androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) {
+                                            Icon(androidx.compose.material.icons.Icons.Default.Check, contentDescription = null, tint = iconColor, modifier = Modifier.size(16.dp))
                                         }
                                     }
                                 }
@@ -600,6 +611,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                 }
             }
         }
+    }
     }
 
     if (showFilterSortDialog) {
