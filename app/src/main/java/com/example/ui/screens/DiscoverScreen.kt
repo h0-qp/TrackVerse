@@ -7,11 +7,13 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,23 +33,34 @@ fun DiscoverScreen(navController: NavController, viewModel: DiscoverViewModel = 
     
     var showFilters by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
-            .windowInsetsPadding(WindowInsets.statusBars)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    Scaffold(
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { navController.navigate("ask_ai") },
+                containerColor = BlueHighlight,
+                contentColor = Color.White,
+                icon = { Icon(androidx.compose.material.icons.Icons.Default.AutoAwesome, contentDescription = "Ask AI") },
+                text = { Text(androidx.compose.ui.res.stringResource(com.example.R.string.ask_ai), fontWeight = FontWeight.Bold) }
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
         ) {
-            Text("Discover", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-            IconButton(onClick = { showFilters = true }) {
-                Icon(Icons.Default.FilterList, contentDescription = "Filters", tint = TextPrimary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Discover", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                IconButton(onClick = { showFilters = true }) {
+                    Icon(Icons.Default.FilterList, contentDescription = "Filters", tint = TextPrimary)
+                }
             }
-        }
         
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -74,6 +87,7 @@ fun DiscoverScreen(navController: NavController, viewModel: DiscoverViewModel = 
                 }
             }
         }
+    }
     }
 
     if (showFilters) {
@@ -123,14 +137,14 @@ fun DiscoverFilterSheet(viewModel: DiscoverViewModel, onApply: () -> Unit) {
             OutlinedTextField(
                 value = year,
                 onValueChange = { year = it },
-                label = { Text("Year") },
+                label = { Text(androidx.compose.ui.res.stringResource(com.example.R.string.year)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )
             OutlinedTextField(
                 value = rating,
                 onValueChange = { rating = it },
-                label = { Text("Min Rating (0-10)") },
+                label = { Text(androidx.compose.ui.res.stringResource(com.example.R.string.min_rating)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )
@@ -148,7 +162,7 @@ fun DiscoverFilterSheet(viewModel: DiscoverViewModel, onApply: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = BlueHighlight)
         ) {
-            Text("Apply Filters", color = androidx.compose.ui.graphics.Color.White)
+            Text(androidx.compose.ui.res.stringResource(com.example.R.string.apply_filters), color = androidx.compose.ui.graphics.Color.White)
         }
         Spacer(modifier = Modifier.height(24.dp))
     }

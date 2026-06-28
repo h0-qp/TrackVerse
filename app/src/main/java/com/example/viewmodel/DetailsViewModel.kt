@@ -22,6 +22,9 @@ class DetailsViewModel : ViewModel() {
     private val _seasonDetails = MutableStateFlow<Map<Int, List<TmdbEpisode>>>(emptyMap())
     val seasonDetails: StateFlow<Map<Int, List<TmdbEpisode>>> = _seasonDetails
 
+    private val _watchProviders = MutableStateFlow<com.example.network.WatchProvidersResponse?>(null)
+    val watchProviders: StateFlow<com.example.network.WatchProvidersResponse?> = _watchProviders
+
     fun loadDetails(id: Int, isMovie: Boolean) {
         _isLoading.value = true
         _error.value = null
@@ -33,6 +36,17 @@ class DetailsViewModel : ViewModel() {
                     ApiClient.tmdbService.getTvDetails(id)
                 }
                 _show.value = details
+
+                try {
+                    val providers = if (isMovie) {
+                        ApiClient.tmdbService.getMovieWatchProviders(id)
+                    } else {
+                        ApiClient.tmdbService.getTvWatchProviders(id)
+                    }
+                    _watchProviders.value = providers
+                } catch (e: Exception) {
+                    // silently ignore watch provider errors
+                }
             } catch (e: Exception) {
                 _error.value = e.localizedMessage
             } finally {

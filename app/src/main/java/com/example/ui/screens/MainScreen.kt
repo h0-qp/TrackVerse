@@ -81,10 +81,12 @@ fun MainScreen() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
+            val showBottomBar = items.any { it.route == currentRoute }
+
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 bottomBar = {
-                    if (currentRoute != "onboarding") {
+                    if (showBottomBar) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -139,7 +141,7 @@ fun MainScreen() {
                 NavHost(
                     navController = navController,
                     startDestination = startDest,
-                    modifier = Modifier.padding(bottom = if (currentRoute == "onboarding") 0.dp else innerPadding.calculateBottomPadding())
+                    modifier = Modifier.padding(bottom = if (showBottomBar) innerPadding.calculateBottomPadding() else 0.dp)
                 ) {
                     composable("onboarding") {
                         OnboardingScreen(onComplete = {
@@ -166,6 +168,9 @@ fun MainScreen() {
                     }
                     composable("settings") { 
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SettingsScreen(navController = navController) }
+                    }
+                    composable("ask_ai") {
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { AiChatScreen(navController = navController) }
                     }
                     composable(
                         route = "details/{showId}/{isMovie}?source={source}",

@@ -75,6 +75,17 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     val query by searchViewModel.query.collectAsState()
     val searchResults by searchViewModel.searchResults.collectAsState()
     val isSearching by searchViewModel.isLoading.collectAsState()
+    
+    val recommendationsViewModel: com.example.viewmodel.RecommendationsViewModel = viewModel()
+    val aiRecommendations by recommendationsViewModel.recommendations.collectAsState()
+    val isRecsLoading by recommendationsViewModel.isLoading.collectAsState()
+
+    LaunchedEffect(watchlist, watchedCounts) {
+        val watchedShows = watchlist.filter { show -> (watchedCounts[show.id] ?: 0) > 0 }
+        if (watchedShows.isNotEmpty() || watchlist.isNotEmpty()) {
+            recommendationsViewModel.fetchRecommendations(watchedShows = watchedShows, watchlist = watchlist)
+        }
+    }
 
     @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
     androidx.compose.material3.pulltorefresh.PullToRefreshBox(
@@ -381,7 +392,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(show.displayTitle, color = TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                        Text("$watched / $total Episodes", color = TextSecondary, fontSize = 12.sp)
+                        Text(stringResource(R.string.episodes_progress, watched, total), color = TextSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         LinearProgressIndicator(
                             progress = { progress },
@@ -394,7 +405,38 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             }
         }
 
-        // AI Recommendations
+        // AI Personalized Recommendations
+        if (aiRecommendations.isNotEmpty() || isRecsLoading) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("✨ Personalized For You", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+            }
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                if (isRecsLoading) {
+                    items(3) {
+                        ShimmerAiRecItem(modifier = Modifier.width(120.dp))
+                    }
+                } else {
+                    items(aiRecommendations) { show ->
+                        AiRecItem(
+                            show = show,
+                            watchlistViewModel = watchlistViewModel,
+                            modifier = Modifier.width(120.dp).clickable {
+                                val isMovie = show.title != null
+                                navController.navigate("details/${show.id}/$isMovie?source=home-recs")
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // Top Rated Shows
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically

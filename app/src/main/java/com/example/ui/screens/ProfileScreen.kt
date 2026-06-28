@@ -39,6 +39,7 @@ import com.example.viewmodel.SocialViewModel
 import com.example.viewmodel.CustomListViewModel
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.BarChart
 
 @Composable
 fun ProfileScreen(

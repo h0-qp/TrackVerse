@@ -67,4 +67,14 @@ interface TmdbService {
     suspend fun getPersonCredits(
         @retrofit2.http.Path("person_id") id: Int
     ): TmdbPersonCredits
+
+    @GET("3/movie/{movie_id}/watch/providers")
+    suspend fun getMovieWatchProviders(
+        @retrofit2.http.Path("movie_id") id: Int
+    ): WatchProvidersResponse
+
+    @GET("3/tv/{tv_id}/watch/providers")
+    suspend fun getTvWatchProviders(
+        @retrofit2.http.Path("tv_id") id: Int
+    ): WatchProvidersResponse
 }

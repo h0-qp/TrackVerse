@@ -77,6 +77,34 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun markSeasonWatched(showId: Int, episodeIds: List<Int>) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val currentList = _watchedEpisodesList.value[showId] ?: emptyList()
+                val currentSet = currentList.toMutableSet()
+                currentSet.addAll(episodeIds)
+                val newList = currentSet.toList()
+
+                val data = hashMapOf(
+                    "watchedEpisodeIds" to newList,
+                    "watchedEpisodes" to newList.size
+                )
+                db.collection("users").document(user.uid)
+                  .collection("watchlist").document(showId.toString())
+                  .set(data, SetOptions.merge())
+                  .addOnSuccessListener {
+                      android.util.Log.d("Watchlist", "markSeasonWatched success")
+                  }
+                  .addOnFailureListener {
+                      android.util.Log.e("Watchlist", "markSeasonWatched failed", it)
+                  }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     // إعادة تعبئة القوائم وجلب البيانات سحابياً
     private fun getWatchedEpisodes(userId: String) {
         listenerRegistration?.remove()
@@ -126,6 +154,25 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
                 }
             } else null
 
+            val lastEpisodeMap = doc.get("lastEpisodeToAir") as? Map<String, Any>
+            val lastEpisode = if (lastEpisodeMap != null) {
+                try {
+                    com.example.network.TmdbEpisode(
+                        id = (lastEpisodeMap["id"] as? Number)?.toInt() ?: 0,
+                        name = lastEpisodeMap["name"] as? String,
+                        airDate = lastEpisodeMap["airDate"] as? String,
+                        episodeNumber = (lastEpisodeMap["episodeNumber"] as? Number)?.toInt(),
+                        seasonNumber = (lastEpisodeMap["seasonNumber"] as? Number)?.toInt(),
+                        stillPath = null,
+                        overview = null,
+                        voteAverage = null,
+                        runtime = null
+                    )
+                } catch (e: Exception) { 
+                    null 
+                }
+            } else null
+
             try {
                 TmdbShow(
                     id = doc.getLong("id")?.toInt() ?: 0,
@@ -139,7 +186,8 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
                     overview = doc.getString("overview"),
                     numberOfEpisodes = doc.getLong("numberOfEpisodes")?.toInt(),
                     numberOfSeasons = doc.getLong("numberOfSeasons")?.toInt(),
-                    nextEpisodeToAir = nextEpisode
+                    nextEpisodeToAir = nextEpisode,
+                    lastEpisodeToAir = lastEpisode
                 )
             } catch (e: Exception) {
                 null
@@ -185,6 +233,16 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
                         "seasonNumber" to it.seasonNumber
                     )
                 }
+                
+                val lastEpisodeMap = show.lastEpisodeToAir?.let {
+                    hashMapOf(
+                        "id" to it.id,
+                        "name" to it.name,
+                        "airDate" to it.airDate,
+                        "episodeNumber" to it.episodeNumber,
+                        "seasonNumber" to it.seasonNumber
+                    )
+                }
 
                 val showMap = hashMapOf(
                     "id" to show.id,
@@ -199,6 +257,7 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
                     "numberOfEpisodes" to show.numberOfEpisodes,
                     "numberOfSeasons" to show.numberOfSeasons,
                     "nextEpisodeToAir" to nextEpisodeMap,
+                    "lastEpisodeToAir" to lastEpisodeMap,
                     "isTracking" to isTracking,
                     "watchedEpisodes" to 0, // القيمة المبدئية 0
                     "addedAt" to System.currentTimeMillis()

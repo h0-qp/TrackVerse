@@ -70,6 +70,8 @@ data class TmdbShow(
     @Json(name = "original_name") val originalName: String? = null,
     @Json(name = "title") val title: String? = null, // Movies have title
     @Json(name = "original_title") val originalTitle: String? = null,
+    @Json(name = "first_air_date") val firstAirDate: String? = null,
+    @Json(name = "release_date") val releaseDate: String? = null,
     @Json(name = "poster_path") val posterPath: String? = null,
     @Json(name = "backdrop_path") val backdropPath: String? = null,
     @Json(name = "vote_average") val voteAverage: Double? = null,
@@ -78,6 +80,7 @@ data class TmdbShow(
     @Json(name = "number_of_seasons") val numberOfSeasons: Int? = null,
     @Json(name = "status") val status: String? = null,
     @Json(name = "next_episode_to_air") val nextEpisodeToAir: TmdbEpisode? = null,
+    @Json(name = "last_episode_to_air") val lastEpisodeToAir: TmdbEpisode? = null,
     @Json(name = "seasons") val seasons: List<TmdbSeason>? = null,
     @Json(name = "credits") val credits: TmdbCredits? = null,
     @Json(name = "videos") val videos: TmdbVideosResponse? = null
@@ -103,4 +106,25 @@ data class TmdbPersonCredits(
     @Json(name = "id") val id: Int,
     @Json(name = "cast") val cast: List<TmdbShow>? = null,
     @Json(name = "crew") val crew: List<TmdbShow>? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class WatchProvidersResponse(
+    val id: Int,
+    val results: Map<String, WatchProviderRegion>?
+)
+
+@JsonClass(generateAdapter = true)
+data class WatchProviderRegion(
+    val link: String?,
+    val flatrate: List<WatchProviderItem>?,
+    val rent: List<WatchProviderItem>?,
+    val buy: List<WatchProviderItem>?
+)
+
+@JsonClass(generateAdapter = true)
+data class WatchProviderItem(
+    @Json(name = "provider_id") val providerId: Int,
+    @Json(name = "provider_name") val providerName: String,
+    @Json(name = "logo_path") val logoPath: String?
 )

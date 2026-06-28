@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
@@ -78,8 +81,7 @@ fun DetailsScreen(
     val sharedTransitionScope = LocalSharedTransitionScope.current
     val animatedVisibilityScope = LocalAnimatedVisibilityScope.current
     
-    var dominantColor by remember { mutableStateOf<Color?>(null) }
-    val dynamicThemeColor = dominantColor ?: BlueHighlight
+    val dynamicThemeColor = BlueHighlight
 
     LaunchedEffect(showId) {
         detailsViewModel.loadDetails(showId, isMovie)
@@ -124,19 +126,7 @@ fun DetailsScreen(
                         .build(),
                     contentDescription = show?.displayTitle,
                     modifier = imgModifier,
-                    contentScale = ContentScale.Crop,
-                    onSuccess = { result ->
-                        val bitmap = (result.result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-                        if (bitmap != null) {
-                            androidx.palette.graphics.Palette.from(bitmap).generate { palette ->
-                                palette?.dominantSwatch?.rgb?.let { colorInt ->
-                                    dominantColor = Color(colorInt)
-                                } ?: palette?.mutedSwatch?.rgb?.let { colorInt ->
-                                    dominantColor = Color(colorInt)
-                                }
-                            }
-                        }
-                    }
+                    contentScale = ContentScale.Crop
                 )
             // Gradient Overlay
             Box(
@@ -147,7 +137,7 @@ fun DetailsScreen(
                             colors = listOf(
                                 Color.Black.copy(alpha=0.6f),
                                 Color.Transparent,
-                                dominantColor?.copy(alpha=0.4f) ?: Color.Black.copy(alpha = 0.5f),
+                                Color.Black.copy(alpha = 0.5f),
                                 MaterialTheme.colorScheme.background
                             )
                         )
@@ -364,6 +354,37 @@ fun DetailsScreen(
                 }
 
                 if (!show?.credits?.cast.isNullOrEmpty()) {
+                    val watchProviders by detailsViewModel.watchProviders.collectAsState()
+                    val usProviders = watchProviders?.results?.get("US")?.flatrate ?: watchProviders?.results?.values?.firstOrNull()?.flatrate
+                    if (!usProviders.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.example.R.string.where_to_watch), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            items(usProviders) { provider ->
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    AsyncImage(
+                                        model = "https://image.tmdb.org/t/p/w185${provider.logoPath}",
+                                        contentDescription = provider.providerName,
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(SurfaceDark),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = provider.providerName,
+                                        fontSize = 10.sp,
+                                        color = TextSecondary,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(androidx.compose.ui.res.stringResource(com.example.R.string.cast), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                     Spacer(modifier = Modifier.height(12.dp))
@@ -546,7 +567,7 @@ fun DetailsScreen(
                                     val watchedColor = if (watchedCount == totalEpisodes) Color(0xFF66BB6A) else Color(0xFF64B5F6)
                                     Text("$watchedCount", fontSize = 14.sp, color = watchedColor, fontWeight = FontWeight.Bold)
                                     Text(" / ", fontSize = 14.sp, color = TextSecondary)
-                                    Text("$totalEpisodes Episodes", fontSize = 14.sp, color = Color(0xFF66BB6A), fontWeight = FontWeight.Bold)
+                                    Text("$totalEpisodes ${androidx.compose.ui.res.stringResource(com.example.R.string.episodes_watched)}", fontSize = 14.sp, color = Color(0xFF66BB6A), fontWeight = FontWeight.Bold)
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
@@ -561,6 +582,33 @@ fun DetailsScreen(
                     
                     show?.seasons?.filter { (it.seasonNumber ?: 0) > 0 }?.forEach { season ->
                         var isExpanded by remember { mutableStateOf(false) }
+                        var showMarkAllDialog by remember { mutableStateOf(false) }
+                        
+                        if (showMarkAllDialog) {
+                            androidx.compose.material3.AlertDialog(
+                                onDismissRequest = { showMarkAllDialog = false },
+                                title = { Text("Mark Season as Watched", color = TextPrimary) },
+                                text = { Text("Are you sure you want to mark all episodes in ${season.name ?: "Season ${season.seasonNumber}"} as watched?", color = TextSecondary) },
+                                confirmButton = {
+                                    androidx.compose.material3.TextButton(onClick = {
+                                        showMarkAllDialog = false
+                                        val episodes = seasonDetailsMap[season.seasonNumber]
+                                        if (episodes != null) {
+                                            watchlistViewModel.markSeasonWatched(show!!.id, episodes.map { it.id })
+                                        }
+                                    }) {
+                                        Text("Confirm", color = dynamicThemeColor)
+                                    }
+                                },
+                                dismissButton = {
+                                    androidx.compose.material3.TextButton(onClick = { showMarkAllDialog = false }) {
+                                        Text("Cancel", color = TextSecondary)
+                                    }
+                                },
+                                containerColor = SurfaceDark
+                            )
+                        }
+
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -575,7 +623,9 @@ fun DetailsScreen(
                                 }
                                 .padding(16.dp)
                         ) {
-                            Text("${androidx.compose.ui.res.stringResource(com.example.R.string.season)} ${season.seasonNumber}: ${season.name ?: ""}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("${androidx.compose.ui.res.stringResource(com.example.R.string.season)} ${season.seasonNumber}: ${season.name ?: ""}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            }
                             
                             if (isExpanded) {
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -584,6 +634,16 @@ fun DetailsScreen(
                                     if (episodes.isEmpty()) {
                                         Text(androidx.compose.ui.res.stringResource(com.example.R.string.tba), color = TextSecondary, fontSize = 14.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp))
                                     } else {
+                                        Button(
+                                            onClick = { showMarkAllDialog = true },
+                                            colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = TextPrimary),
+                                            border = BorderStroke(1.dp, BlueHighlight),
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                                        ) {
+                                            Icon(Icons.Default.DoneAll, contentDescription = "Mark All Watched", tint = BlueHighlight)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Mark All Watched", color = TextPrimary)
+                                        }
                                         episodes.forEach { episode ->
                                             val isWatched = watchedEpisodeIds.contains(episode.id)
                                             val airDateStr = episode.airDate
@@ -637,14 +697,37 @@ fun DetailsScreen(
                                                 } else {
                                                     String.format(androidx.compose.ui.res.stringResource(com.example.R.string.in_days), daysUntil)
                                                 }
-                                                Text(
-                                                    text = timeText,
-                                                    fontSize = 12.sp,
-                                                    color = Color(0xFF64B5F6),
-                                                    fontWeight = FontWeight.Bold,
-                                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                                    modifier = Modifier.background(Color(0xFF64B5F6).copy(alpha = 0.2f), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
-                                                )
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    val context = androidx.compose.ui.platform.LocalContext.current
+                                                    androidx.compose.material3.IconButton(
+                                                        onClick = {
+                                                            val intent = android.content.Intent(android.content.Intent.ACTION_INSERT)
+                                                                .setData(android.provider.CalendarContract.Events.CONTENT_URI)
+                                                                .putExtra(android.provider.CalendarContract.Events.TITLE, "${show!!.displayTitle} S${season.seasonNumber}E${episode.episodeNumber} - ${episode.name}")
+                                                                .putExtra(android.provider.CalendarContract.Events.DESCRIPTION, episode.overview ?: "")
+                                                            try {
+                                                                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                                                                val date = sdf.parse(airDateStr)
+                                                                if (date != null) {
+                                                                    intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, date.time)
+                                                                    intent.putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, date.time + 60 * 60 * 1000)
+                                                                }
+                                                            } catch (e: Exception) {}
+                                                            context.startActivity(intent)
+                                                        },
+                                                        modifier = Modifier.size(36.dp)
+                                                    ) {
+                                                        Icon(Icons.Default.Event, contentDescription = androidx.compose.ui.res.stringResource(com.example.R.string.add_to_calendar), tint = Color(0xFF64B5F6))
+                                                    }
+                                                    Text(
+                                                        text = timeText,
+                                                        fontSize = 12.sp,
+                                                        color = Color(0xFF64B5F6),
+                                                        fontWeight = FontWeight.Bold,
+                                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                        modifier = Modifier.background(Color(0xFF64B5F6).copy(alpha = 0.2f), RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)
+                                                    )
+                                                }
                                             } else {
                                                 val animatedColor by androidx.compose.animation.animateColorAsState(targetValue = if (isWatched) Color(0xFF66BB6A) else TextTertiary, label = "color")
                                                 val scale by androidx.compose.animation.core.animateFloatAsState(targetValue = if (isWatched) 1.1f else 1f, label = "scale")
