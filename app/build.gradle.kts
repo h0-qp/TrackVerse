@@ -23,8 +23,6 @@ android {
     versionName = "1.0"
     
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("GEMINI_API_KEY") ?: "MY_GEMINI_API_KEY"}\"")
-    buildConfigField("String", "TMDB_API_KEY", "\"${System.getenv("TMDB_API_KEY") ?: "YOUR_TMDB_API_KEY"}\"")
   }
 
   signingConfigs {
