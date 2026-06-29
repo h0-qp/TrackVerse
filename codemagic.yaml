@@ -2,30 +2,17 @@ workflows:
   android-workflow:
     name: Android Build
     instance_type: mac_mini_m1
-
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-          source: true
-
     environment:
       java: 17
-
     scripts:
       - name: Set up local.properties
         script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"
-
       - name: Create .env placeholders
         script: |
           cp .env.example .env || true
-
       - name: Ensure permission on gradlew
         script: chmod +x gradlew
-
       - name: Setup Keystore
         script: |
           if [ -f debug.keystore.base64 ]; then
@@ -34,13 +21,11 @@ workflows:
           if [ ! -f debug.keystore ]; then
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
           fi
-
       - name: Build Android App (Debug)
         script: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            gradle wrapper --gradle-version 9.3.1
+              gradle wrapper --gradle-version 9.3.1
           fi
           ./gradlew assembleDebug
-
     artifacts:
       - app/build/outputs/**/*.apk
