@@ -1,0 +1,4 @@
+Fetching servers from Gofile...
+Trying gofile store3
+Output: {"data":{"createTime":1782753270,"downloadPage":"https://gofile.io/d/oK0jWJ","guestToken":"yTOe6kyJ0PS2hflZebVIVDd3AKMuI92a","id":"600ae04a-bf54-4795-9a4a-4a11547bced0","md5":"19674a91f1d7798556e217a87c53a9a5","mimetype":"application/zip","modTime":1782753270,"name":"app-release.apk","parentFolder":"b3f454dc-386b-445c-88d5-7a3415897ce9","parentFolderCode":"oK0jWJ","servers":["store3"],"size":20063270,"type":"file"},"status":"ok"}
+
