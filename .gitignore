@@ -17,3 +17,4 @@ local.properties
 .env
 debug.keystore
 !debug.keystore.base64
+!gradle/wrapper/gradle-wrapper.jar
