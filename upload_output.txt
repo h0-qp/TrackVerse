@@ -1,0 +1,6 @@
+Fetching servers from Gofile...
+Trying gofile store6
+store6 failed
+Trying gofile store-eu-par-7
+Output: {"data":{"createTime":1782735303,"downloadPage":"https://gofile.io/d/oip5Z5","guestToken":"lidoh1PC5yhbQOGRsDSsQEPiTsrpZsvD","id":"c49a1067-7195-44dc-a6b3-1c4a11e7ea0d","md5":"1a8f2b369889cd00038317eb2511625a","mimetype":"application/zip","modTime":1782735303,"name":"app-debug.apk","parentFolder":"b11105c6-dbf6-4d91-a33a-0de3f319df09","parentFolderCode":"oip5Z5","servers":["store9"],"size":28290305,"type":"file"},"status":"ok"}
+
