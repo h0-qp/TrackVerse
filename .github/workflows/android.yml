@@ -41,9 +41,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
-          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            gradle wrapper
-          fi
+          rm -f gradle/wrapper/gradle-wrapper.jar
+          gradle wrapper
           ./gradlew assembleDebug
 
       - name: Upload APK
