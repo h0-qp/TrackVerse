@@ -29,9 +29,13 @@ workflows:
       - name: Setup Keystore
         script: |
           if [ -f debug.keystore.base64 ]; then
-            base64 -d debug.keystore.base64 > debug.keystore || base64 -D debug.keystore.base64 > debug.keystore || true
+            echo "Found debug.keystore.base64! Decoding it..."
+            base64 -d debug.keystore.base64 > debug.keystore || base64 -D debug.keystore.base64 > debug.keystore || echo "Base64 decode failed"
+          else
+            echo "ERROR: debug.keystore.base64 NOT FOUND in the repository!"
           fi
-          if [ ! -f debug.keystore ]; then
+          if [ ! -s debug.keystore ]; then
+            echo "Generating new debug.keystore..."
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
           fi
 
