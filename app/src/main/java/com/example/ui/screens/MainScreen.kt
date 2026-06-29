@@ -186,7 +186,11 @@ fun MainScreen() {
                                 nullable = true
                                 defaultValue = ""
                             }
-                        )
+                        ),
+                        enterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(400)) },
+                        exitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(400)) },
+                        popEnterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(400)) },
+                        popExitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(400)) }
                     ) { backStackEntry ->
                         val showId = backStackEntry.arguments?.getInt("showId") ?: 0
                         val isMovie = backStackEntry.arguments?.getBoolean("isMovie") ?: false

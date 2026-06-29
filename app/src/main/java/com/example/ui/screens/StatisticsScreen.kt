@@ -444,7 +444,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                     imgModifier = imgModifier.sharedElement(
                                         state = rememberSharedContentState(key = "image-${show.id}-stats"),
                                         animatedVisibilityScope = animatedVisibilityScope,
-                                        boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                                        boundsTransform = { _, _ -> tween(durationMillis = 400, easing = androidx.compose.animation.core.FastOutSlowInEasing) }
                                     )
                                 }
                             }

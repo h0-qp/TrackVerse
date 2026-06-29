@@ -114,7 +114,7 @@ fun DetailsScreen(
                         imgModifier = imgModifier.sharedElement(
                             state = rememberSharedContentState(key = finalKey),
                             animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                            boundsTransform = { _, _ -> androidx.compose.animation.core.tween(durationMillis = 400, easing = androidx.compose.animation.core.FastOutSlowInEasing) }
                         )
                     }
                 }

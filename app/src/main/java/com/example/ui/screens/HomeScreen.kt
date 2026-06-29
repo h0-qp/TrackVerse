@@ -285,7 +285,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                         imgModifier = imgModifier.sharedElement(
                                             state = rememberSharedContentState(key = "image-${heroShow.id}-home-hero-${page}"),
                                             animatedVisibilityScope = animatedVisibilityScope,
-                                            boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                                            boundsTransform = { _, _ -> tween(durationMillis = 400, easing = androidx.compose.animation.core.FastOutSlowInEasing) }
                                         )
                                     }
                                 }
@@ -609,7 +609,7 @@ fun AiRecItem(show: TmdbShow, watchlistViewModel: WatchlistViewModel, modifier: 
                     imgModifier = imgModifier.sharedElement(
                         state = rememberSharedContentState(key = "image-${show.id}-home-grid"),
                         animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                        boundsTransform = { _, _ -> tween(durationMillis = 400, easing = androidx.compose.animation.core.FastOutSlowInEasing) }
                     )
                 }
             }
@@ -676,7 +676,7 @@ fun SearchResultItem(show: TmdbShow, sourceKey: String, modifier: Modifier = Mod
                     imgModifier = imgModifier.sharedElement(
                         state = rememberSharedContentState(key = "image-${show.id}-$sourceKey"),
                         animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ -> tween(durationMillis = 500) }
+                        boundsTransform = { _, _ -> tween(durationMillis = 400, easing = androidx.compose.animation.core.FastOutSlowInEasing) }
                     )
                 }
             }
