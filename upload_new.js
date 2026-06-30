@@ -9,7 +9,7 @@ try {
     for (const server of servers) {
         try {
             console.log('Trying gofile', server);
-            const output = execSync(`curl -m 25 -s -F "file=@./app/build/outputs/apk/debug/app-debug.apk" https://${server}.gofile.io/contents/uploadfile`);
+            const output = execSync(`curl -m 25 -s -F "file=@./app-release.apk" https://${server}.gofile.io/contents/uploadfile`);
             const resStr = output.toString();
             console.log("Output:", resStr);
             if (resStr.includes('"status":"ok"')) {

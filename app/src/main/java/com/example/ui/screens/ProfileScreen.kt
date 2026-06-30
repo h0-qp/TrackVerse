@@ -3,8 +3,10 @@ package com.example.ui.screens
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +34,7 @@ import com.example.ui.theme.*
 import com.example.viewmodel.AuthViewModel
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import com.example.R
 
 import com.example.viewmodel.WatchlistViewModel
@@ -65,6 +68,8 @@ fun ProfileScreen(
     var showCreateListDialog by remember { mutableStateOf(false) }
     var newListName by remember { mutableStateOf("") }
     var newListPublic by remember { mutableStateOf(false) }
+
+    var selectedCustomList by remember { mutableStateOf<com.example.viewmodel.CustomList?>(null) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -148,6 +153,55 @@ fun ProfileScreen(
         )
     }
 
+    if (selectedCustomList != null) {
+        val list = selectedCustomList!!
+        AlertDialog(
+            onDismissRequest = { selectedCustomList = null },
+            title = { Text(list.name, color = TextPrimary) },
+            text = {
+                if (list.shows.isEmpty()) {
+                    Text("This list is empty.", color = TextSecondary)
+                } else {
+                    androidx.compose.foundation.lazy.LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(list.shows.size) { index ->
+                            val show = list.shows[index]
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedCustomList = null
+                                        val mediaType = if (show.isMovie) "movie" else "tv"
+                                        navController?.navigate("details/${show.id}/$mediaType")
+                                    }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = "https://image.tmdb.org/t/p/w92${show.posterPath}",
+                                    contentDescription = null,
+                                    modifier = Modifier.size(40.dp, 60.dp).clip(RoundedCornerShape(4.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(show.title, color = TextPrimary, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedCustomList = null }) {
+                    Text("Close", color = BlueHighlight)
+                }
+            },
+            containerColor = SurfaceDark,
+            textContentColor = TextSecondary
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -207,11 +261,14 @@ fun ProfileScreen(
                 // Stats Section
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     val totalEpisodes = watchedList.values.sumOf { it.size }
                     ProfileStatItem(title = stringResource(R.string.following), value = following.size.toString())
+                    Box(modifier = Modifier.width(1.dp).height(40.dp).background(TextSecondary.copy(alpha = 0.3f)))
                     ProfileStatItem(title = stringResource(R.string.watchlist_title), value = watchlist.size.toString())
+                    Box(modifier = Modifier.width(1.dp).height(40.dp).background(TextSecondary.copy(alpha = 0.3f)))
                     ProfileStatItem(title = stringResource(R.string.episodes_watched), value = totalEpisodes.toString())
                 }
 
@@ -227,9 +284,9 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Last Watched Card
                     val lastWatchedShow = watchlist.lastOrNull() // Simplify: just pick the last added or modified
@@ -240,77 +297,93 @@ fun ProfileScreen(
                     val moviesLeft = watchlist.count { it.title != null }
 
                     Card(
-                        modifier = Modifier.weight(1f).height(180.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp).fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.last_watched_record), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                            Text(stringResource(R.string.last_watched_record), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                                 AsyncImage(
                                     model = "https://image.tmdb.org/t/p/w200${lastWatchedShow?.posterPath}",
                                     contentDescription = null,
-                                    modifier = Modifier.size(50.dp, 75.dp).clip(RoundedCornerShape(8.dp)),
+                                    modifier = Modifier.size(60.dp, 90.dp).clip(RoundedCornerShape(8.dp)),
                                     contentScale = ContentScale.Crop
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(stringResource(R.string.last_watched_prefix), fontSize = 10.sp, color = TextTertiary)
-                                    Text(lastWatchedShow?.displayTitle ?: "None", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary, maxLines = 1)
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(R.string.last_watched_prefix), fontSize = 12.sp, color = TextTertiary)
+                                    Text(
+                                        text = lastWatchedShow?.displayTitle ?: "None", 
+                                        fontSize = 16.sp, 
+                                        fontWeight = FontWeight.Bold, 
+                                        color = TextPrimary, 
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     LinearProgressIndicator(
                                         progress = { if (totalEpsForLastWatched > 0) lastWatchedCount.toFloat() / totalEpsForLastWatched else 0f },
-                                        modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
                                         color = BlueHighlight,
                                         trackColor = Color.DarkGray
                                     )
                                 }
                             }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
-                                    Icon(Icons.Default.Tv, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextSecondary)
-                                    Text("${stringResource(R.string.episodes_left)}: $episodesLeft", fontSize = 10.sp, color = TextSecondary)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.Tv, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextSecondary)
+                                    Text("${stringResource(R.string.episodes_left)}: $episodesLeft", fontSize = 12.sp, color = TextSecondary)
                                 }
-                                Column {
-                                    Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextSecondary)
-                                    Text("${stringResource(R.string.movies_left)}: $moviesLeft", fontSize = 10.sp, color = TextSecondary)
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextSecondary)
+                                    Text("${stringResource(R.string.movies_left)}: $moviesLeft", fontSize = 12.sp, color = TextSecondary)
                                 }
                             }
                         }
                     }
 
                     // Recommended Playlist Card
-                    val recommendedShows = watchlist.shuffled().take(3)
+                    val recommendedShows = watchlist.shuffled().take(5)
                     Card(
-                        modifier = Modifier.weight(1f).height(180.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = SurfaceDark),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp).fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
-                            Text(stringResource(R.string.recommended_playlist), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1)
-                            Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
-                                recommendedShows.forEachIndexed { index, show ->
-                                    AsyncImage(
-                                        model = "https://image.tmdb.org/t/p/w200${show.posterPath}",
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(40.dp, 60.dp)
-                                            .zIndex((3 - index).toFloat())
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .border(1.dp, SurfaceDark, RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-                            }
-                            Text(stringResource(R.string.high_rated_similar), fontSize = 10.sp, color = TextTertiary, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 2)
-                            Button(
-                                onClick = { /* Navigate to a playlist screen or play first item */ },
-                                modifier = Modifier.fillMaxWidth().height(32.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-                                shape = RoundedCornerShape(16.dp),
-                                contentPadding = PaddingValues(0.dp)
+                        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                            Text(stringResource(R.string.recommended_playlist), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(stringResource(R.string.high_rated_similar), fontSize = 12.sp, color = TextTertiary)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(stringResource(R.string.start_playlist), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
+                                    recommendedShows.forEachIndexed { index, show ->
+                                        AsyncImage(
+                                            model = "https://image.tmdb.org/t/p/w200${show.posterPath}",
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(50.dp, 75.dp)
+                                                .zIndex((5 - index).toFloat())
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .border(1.dp, SurfaceDark, RoundedCornerShape(8.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                }
+                                Button(
+                                    onClick = { /* Navigate to a playlist screen or play first item */ },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                                    shape = RoundedCornerShape(16.dp),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(stringResource(R.string.start_playlist), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -325,7 +398,7 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "My Custom Lists",
+                        text = stringResource(R.string.custom_lists_title),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
@@ -343,7 +416,10 @@ fun ProfileScreen(
                         items(myCustomLists.size) { index ->
                             val list = myCustomLists[index]
                             Card(
-                                modifier = Modifier.width(160.dp).height(100.dp),
+                                modifier = Modifier
+                                    .width(160.dp)
+                                    .height(100.dp)
+                                    .clickable { selectedCustomList = list },
                                 colors = CardDefaults.cardColors(containerColor = SurfaceDark),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
@@ -355,7 +431,7 @@ fun ProfileScreen(
                                     Icon(Icons.Default.List, contentDescription = null, tint = BlueHighlight)
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(list.name, fontWeight = FontWeight.Bold, color = TextPrimary, maxLines = 1)
-                                    Text("${list.shows.size} items", fontSize = 12.sp, color = TextSecondary)
+                                    Text(stringResource(R.string.items, list.shows.size), fontSize = 12.sp, color = TextSecondary)
                                 }
                             }
                         }
@@ -364,12 +440,13 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                Button(
+                OutlinedButton(
                     onClick = { 
                         viewModel.signOut()
                         watchlistViewModel.clearWatchlist()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark, contentColor = TextPrimary),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF44336)),
+                    border = BorderStroke(1.dp, Color(0xFFF44336).copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) {

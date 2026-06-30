@@ -45,6 +45,8 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -432,6 +434,8 @@ fun DetailsScreen(
 
                 val trackedItem = watchlist.find { it.id == show?.id }
                 val isInWatchlistCheck = trackedItem != null
+                val favIds by watchlistViewModel.favoriteIds.collectAsState()
+                val isFavorite = show?.id in favIds
                 val watchedCount = watchlistViewModel.watchedEpisodesCount.collectAsState().value[show?.id] ?: 0
                 val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
                 val context = androidx.compose.ui.platform.LocalContext.current
@@ -447,39 +451,63 @@ fun DetailsScreen(
                     finishedListener = { playAnimation = false }
                 )
 
-                Button(
-                    onClick = {
-                        if (auth.currentUser == null) {
-                            android.widget.Toast.makeText(context, "Please sign in from Profile to subscribe", android.widget.Toast.LENGTH_LONG).show()
-                        } else {
-                            if (isInWatchlistCheck) {
-                                watchlistViewModel.removeFromWatchlist(show!!.id)
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Button(
+                        onClick = {
+                            if (auth.currentUser == null) {
+                                android.widget.Toast.makeText(context, "Please sign in from Profile to subscribe", android.widget.Toast.LENGTH_LONG).show()
                             } else {
-                                playAnimation = true
-                                watchlistViewModel.addToWatchlist(show!!, isTracking = true)
-                                if (isMovie) {
-                                    showReviewDialog = true
+                                if (isInWatchlistCheck) {
+                                    watchlistViewModel.removeFromWatchlist(show!!.id)
+                                } else {
+                                    playAnimation = true
+                                    watchlistViewModel.addToWatchlist(show!!, isTracking = true)
+                                    if (isMovie) {
+                                        showReviewDialog = true
+                                    }
                                 }
                             }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isInWatchlistCheck) SurfaceDark else BlueHighlight,
+                            contentColor = TextPrimary
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.weight(1f).height(56.dp).graphicsLayer(scaleX = sizeScale, scaleY = sizeScale)
+                    ) {
+                        val textRes = if (isMovie) {
+                            if (isInWatchlistCheck) com.example.R.string.remove_watched_movie else com.example.R.string.watch_movie
+                        } else {
+                            if (isInWatchlistCheck) com.example.R.string.unsubscribe_remove else com.example.R.string.subscribe_series
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isInWatchlistCheck) SurfaceDark else BlueHighlight,
-                        contentColor = TextPrimary
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().height(56.dp).graphicsLayer(scaleX = sizeScale, scaleY = sizeScale)
-                ) {
-                    val textRes = if (isMovie) {
-                        if (isInWatchlistCheck) com.example.R.string.remove_watched_movie else com.example.R.string.watch_movie
-                    } else {
-                        if (isInWatchlistCheck) com.example.R.string.unsubscribe_remove else com.example.R.string.subscribe_series
+                        Text(
+                            androidx.compose.ui.res.stringResource(textRes),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
                     }
-                    Text(
-                        androidx.compose.ui.res.stringResource(textRes),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    IconButton(
+                        onClick = {
+                            if (auth.currentUser == null) {
+                                android.widget.Toast.makeText(context, "Please sign in to add to favorites", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                show?.let { watchlistViewModel.toggleFavorite(it) }
+                            }
+                        },
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isFavorite) androidx.compose.ui.graphics.Color(0xFFE91E63).copy(alpha = 0.2f) else SurfaceDark)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) androidx.compose.material.icons.Icons.Filled.Favorite else androidx.compose.material.icons.Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) androidx.compose.ui.graphics.Color(0xFFE91E63) else TextSecondary
+                        )
+                    }
                 }
 
                 if (showReviewDialog) {

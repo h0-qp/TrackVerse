@@ -4,10 +4,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.ui.screens.MainScreen
 import com.example.ui.theme.MyApplicationTheme
+import com.example.workers.NewEpisodeWorker
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
   override fun attachBaseContext(newBase: android.content.Context) {
@@ -36,6 +41,16 @@ class MainActivity : ComponentActivity() {
     }
     
     enableEdgeToEdge()
+    
+    // Schedule periodic checking for new episodes
+    val episodeCheckRequest = PeriodicWorkRequestBuilder<NewEpisodeWorker>(12, TimeUnit.HOURS)
+        .build()
+    WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+        "NewEpisodeCheck",
+        ExistingPeriodicWorkPolicy.KEEP,
+        episodeCheckRequest
+    )
+
     setContent {
       MyApplicationTheme {
         MainScreen()

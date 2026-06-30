@@ -54,14 +54,15 @@
     <string name="top_rated_movies">Top Rated Movies</string>
     <string name="recommended_for_you">Recommended for You</string>
     <string name="releasing_today">Releasing Today</string>
-    <string name="productivity_summary">Productivity Summary</string>
+    <string name="productivity_summary">Overview</string>
     <string name="last_watched_record">Last Watched</string>
     <string name="last_watched_prefix">Last Watched:</string>
     <string name="episodes_left">Episodes Left</string>
     <string name="movies_left">Movies Left</string>
-    <string name="recommended_playlist">Recommended Playlist</string>
+    <string name="recommended_playlist">Suggested Playlist</string>
     <string name="high_rated_similar">High-rated, similar to your favorites</string>
     <string name="start_playlist">Start Playlist</string>
+    <string name="custom_lists_title">Custom Lists</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="username">Username</string>
     <string name="save">Save</string>

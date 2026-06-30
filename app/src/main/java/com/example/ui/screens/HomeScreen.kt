@@ -40,6 +40,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.ui.res.stringResource
 import com.example.viewmodel.WatchlistViewModel
 
@@ -359,6 +360,37 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                     watchlistViewModel = watchlistViewModel,
                                     modifier = Modifier.width(120.dp).clickable {
                                         navController.navigate("details/${show.id}/false?source=home-releasing")
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    // Favorites Section
+                    val favorites by watchlistViewModel.favorites.collectAsState()
+                    
+                    if (favorites.isNotEmpty()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(androidx.compose.material.icons.Icons.Filled.Favorite, contentDescription = "Favorites", tint = androidx.compose.ui.graphics.Color(0xFFE91E63), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Your Favorites", fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+                        }
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(favorites) { show ->
+                                AiRecItem(
+                                    show = show,
+                                    watchlistViewModel = watchlistViewModel,
+                                    modifier = Modifier.width(120.dp).clickable {
+                                        val isMovie = show.title != null
+                                        navController.navigate("details/${show.id}/$isMovie?source=home-favorites")
                                     }
                                 )
                             }

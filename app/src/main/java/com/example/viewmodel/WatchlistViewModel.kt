@@ -23,6 +23,12 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
     private val _watchlist = MutableStateFlow<List<TmdbShow>>(emptyList())
     val watchlist: StateFlow<List<TmdbShow>> = _watchlist.asStateFlow()
 
+    private val _favorites = MutableStateFlow<List<TmdbShow>>(emptyList())
+    val favorites: StateFlow<List<TmdbShow>> = _favorites.asStateFlow()
+
+    private val _favoriteIds = MutableStateFlow<Set<Int>>(emptySet())
+    val favoriteIds: StateFlow<Set<Int>> = _favoriteIds.asStateFlow()
+
     private val _watchedEpisodesCount = MutableStateFlow<Map<Int, Int>>(emptyMap())
     val watchedEpisodesCount: StateFlow<Map<Int, Int>> = _watchedEpisodesCount.asStateFlow()
 
@@ -252,9 +258,14 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
             val watchedList = (doc.get("watchedEpisodeIds") as? List<*>)?.mapNotNull { (it as? Number)?.toInt() } ?: emptyList()
             showId to watchedList
         }
+
+        val favIds = snapshot.documents.filter { it.getBoolean("isFavorite") == true }.mapNotNull { it.getLong("id")?.toInt() }.toSet()
+        val favItems = items.filter { it.id in favIds }
         
         // تحديث القوائم الحية
         _watchlist.value = items
+        _favorites.value = favItems
+        _favoriteIds.value = favIds
         _watchedEpisodesCount.value = counts
         _watchedEpisodesList.value = lists
     }
@@ -352,6 +363,31 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun toggleEpisodeWatched(showId: Int, episodeId: Int) {
         saveWatchedEpisode(showId, episodeId)
+    }
+
+    fun toggleFavorite(show: TmdbShow) {
+        val user = auth.currentUser ?: return
+        viewModelScope.launch {
+            try {
+                val currentIsFav = _favoriteIds.value.contains(show.id)
+                val newIsFav = !currentIsFav
+
+                // Ensure it exists in the watchlist collection first
+                if (!_watchlist.value.any { it.id == show.id }) {
+                    addToWatchlist(show, isTracking = false) // Add with default tracking
+                }
+
+                val data = hashMapOf("isFavorite" to newIsFav)
+                db.collection("users").document(user.uid)
+                  .collection("watchlist").document(show.id.toString())
+                  .set(data, SetOptions.merge())
+                  .addOnFailureListener {
+                      android.util.Log.e("Watchlist", "toggleFavorite failed", it)
+                  }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun toggleWatchedEpisode(showId: Int, episodeId: Int) {
