@@ -133,7 +133,7 @@
     <string name="last_watched_record">آخر مشاهدة</string>
     <string name="last_watched_prefix">آخر مشاهدة:</string>
     <string name="episodes_left">حلقات متبقية</string>
-    <string name="movies_left">أفلام متبقية</string>
+    <string name="movies_left">أفلام تمت مشاهدتها</string>
     <string name="recommended_playlist">قائمة مقترحة</string>
     <string name="high_rated_similar">مشابه بتقييم عالي</string>
     <string name="start_playlist">بدء القائمة</string>

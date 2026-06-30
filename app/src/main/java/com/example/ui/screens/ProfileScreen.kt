@@ -294,7 +294,7 @@ fun ProfileScreen(
                     val totalEpsForLastWatched = lastWatchedShow?.numberOfEpisodes ?: 1
                     
                     val episodesLeft = watchlist.filter { it.title == null }.sumOf { (it.numberOfEpisodes ?: 0) - (watchedList[it.id]?.size ?: 0) }.coerceAtLeast(0)
-                    val moviesLeft = watchlist.count { it.title != null }
+                    val moviesWatched = watchlist.count { it.title != null }
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -339,7 +339,7 @@ fun ProfileScreen(
                                 }
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(Icons.Default.Movie, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextSecondary)
-                                    Text("${stringResource(R.string.movies_left)}: $moviesLeft", fontSize = 12.sp, color = TextSecondary)
+                                    Text("${stringResource(R.string.movies_left)}: $moviesWatched", fontSize = 12.sp, color = TextSecondary)
                                 }
                             }
                         }

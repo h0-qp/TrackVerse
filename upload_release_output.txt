@@ -1,6 +1,0 @@
-Fetching servers from Gofile...
-Trying gofile store6
-store6 failed
-Trying gofile store-eu-par-4
-Output: {"data":{"createTime":1782775170,"downloadPage":"https://gofile.io/d/sBatbW","guestToken":"bIwHIDsAbGyxeEgVRr4goBa3SXosoD6L","id":"96fa4b94-61a4-4790-9579-e1acb1a33ecd","md5":"d372c77a060db3d4ee557353055e458a","mimetype":"application/zip","modTime":1782775170,"name":"app-release.apk","parentFolder":"cc6cdeed-e265-49d6-b413-059d8d373ecc","parentFolderCode":"sBatbW","servers":["store-eu-par-4"],"size":20063270,"type":"file"},"status":"ok"}
-

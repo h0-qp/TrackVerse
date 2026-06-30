@@ -58,7 +58,7 @@
     <string name="last_watched_record">Last Watched</string>
     <string name="last_watched_prefix">Last Watched:</string>
     <string name="episodes_left">Episodes Left</string>
-    <string name="movies_left">Movies Left</string>
+    <string name="movies_left">Watched Movies</string>
     <string name="recommended_playlist">Suggested Playlist</string>
     <string name="high_rated_similar">High-rated, similar to your favorites</string>
     <string name="start_playlist">Start Playlist</string>

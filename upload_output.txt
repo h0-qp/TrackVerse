@@ -1,4 +1,0 @@
-Fetching servers from Gofile...
-Trying gofile store-eu-par-4
-Output: {"data":{"createTime":1782750692,"downloadPage":"https://gofile.io/d/7tFleO","guestToken":"yDhWLp780lCcowX9lJXy1rN12md7F6zQ","id":"84db7396-b899-4cf8-a1fc-3c079a572979","md5":"9e79daf56e1587f75a9922b2b9a67af4","mimetype":"application/zip","modTime":1782750692,"name":"app-debug.apk","parentFolder":"c29c4d76-db43-4850-9e54-aa77df410aac","parentFolderCode":"7tFleO","servers":["store-eu-par-4"],"size":28673729,"type":"file"},"status":"ok"}
-
