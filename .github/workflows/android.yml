@@ -59,3 +59,13 @@ jobs:
         with:
           name: trackverse-release-apk
           path: app/build/outputs/apk/release/app-release.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: release-${{ github.sha }}
+          name: Release ${{ github.sha }}
+          files: app/build/outputs/apk/release/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
