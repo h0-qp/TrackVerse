@@ -31,13 +31,21 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
-          echo "GEMINI_API_KEY=${GEMINI_API_KEY}" > .env
-          echo "TMDB_API_KEY=${TMDB_API_KEY}" >> .env
+          if [ ! -z "$GEMINI_API_KEY" ]; then
+            echo "GEMINI_API_KEY=${GEMINI_API_KEY}" > .env
+          fi
+          if [ ! -z "$TMDB_API_KEY" ]; then
+            echo "TMDB_API_KEY=${TMDB_API_KEY}" >> .env
+          fi
+          if [ ! -s .env ] && [ -f .env.example ]; then
+            cp .env.example .env
+          fi
 
       - name: Decode Keystore
         run: |
           if [ -f debug.keystore.base64 ]; then
-            base64 -d debug.keystore.base64 > debug.keystore || true
+            # Use --decode and ignore garbage just in case
+            base64 --decode --ignore-garbage debug.keystore.base64 > debug.keystore || true
           fi
           if [ ! -s debug.keystore ]; then
             echo "Generating new debug.keystore..."
