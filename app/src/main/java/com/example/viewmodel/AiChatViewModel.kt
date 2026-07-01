@@ -37,7 +37,8 @@ class AiChatViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val apiKey = BuildConfig.GEMINI_API_KEY
+                val rawApiKey = BuildConfig.GEMINI_API_KEY
+                val apiKey = rawApiKey.removePrefix("\"").removeSuffix("\"").trim()
                 
                 if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
                     val updatedMessages = _messages.value.toMutableList()
@@ -93,7 +94,12 @@ class AiChatViewModel : ViewModel() {
                 val errorMessage = if (e.code() == 400 && errorBody?.contains("API_KEY_INVALID") == true) {
                     "عذراً، مفتاح API الخاص بـ Gemini غير صالح. يرجى التحقق من إضافة المفتاح الصحيح في قسم الأسرار (Secrets)."
                 } else if (e.code() == 403 || e.code() == 401) {
-                    "عذراً، غير مصرح لك بالوصول. يرجى التأكد من صحة مفتاح API (Secrets)."
+                    val isLeaked = errorBody?.contains("leaked", ignoreCase = true) == true
+                    if (isLeaked) {
+                        "عذراً، لقد قامت جوجل بإيقاف مفتاح API الخاص بك لأنه تم تسريبه (Leaked API Key). يرجى إنشاء مفتاح جديد من Google AI Studio ووضعه في الـ Secrets."
+                    } else {
+                        "عذراً، غير مصرح لك بالوصول. يرجى التأكد من صحة مفتاح API. التفاصيل: $errorBody"
+                    }
                 } else if (e.code() == 404) {
                     "عذراً، لم يتم العثور على النموذج المحدد في خوادم Gemini. يرجى التأكد من استخدام نموذج مدعوم."
                 } else {

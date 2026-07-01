@@ -4,12 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import com.example.ui.screens.MainScreen
 import com.example.ui.theme.MyApplicationTheme
-import com.example.workers.NewEpisodeWorker
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import java.util.concurrent.TimeUnit
@@ -42,14 +38,22 @@ class MainActivity : ComponentActivity() {
     
     enableEdgeToEdge()
     
-    // Schedule periodic checking for new episodes
-    val episodeCheckRequest = PeriodicWorkRequestBuilder<NewEpisodeWorker>(12, TimeUnit.HOURS)
-        .build()
-    WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-        "NewEpisodeCheck",
-        ExistingPeriodicWorkPolicy.KEEP,
-        episodeCheckRequest
-    )
+    // Request Notification Permission for Android 13+
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+        }
+    }
+
+    // Subscribe to topics
+    com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("daily_updates")
+        .addOnCompleteListener { task ->
+            var msg = "Subscribed to daily_updates"
+            if (!task.isSuccessful) {
+                msg = "Subscribe failed"
+            }
+            android.util.Log.d("FCM", msg)
+        }
 
     setContent {
       MyApplicationTheme {

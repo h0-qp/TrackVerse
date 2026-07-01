@@ -29,7 +29,7 @@ object ApiClient {
             
         val request = originalRequest.newBuilder()
             .url(url)
-            .addHeader("Authorization", "Bearer ${BuildConfig.TMDB_API_KEY}")
+            .addHeader("Authorization", "Bearer ${BuildConfig.TMDB_API_KEY.removePrefix("\"").removeSuffix("\"").trim()}")
             .addHeader("accept", "application/json")
             .build()
         chain.proceed(request)
