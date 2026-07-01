@@ -44,12 +44,14 @@ jobs:
       - name: Decode Keystore
         run: |
           if [ -f debug.keystore.base64 ]; then
-            # Use --decode and ignore garbage just in case
-            base64 --decode --ignore-garbage debug.keystore.base64 > debug.keystore || true
+            base64 --decode --ignore-garbage < debug.keystore.base64 > debug.keystore
+          else
+            echo "Error: debug.keystore.base64 not found!"
+            exit 1
           fi
           if [ ! -s debug.keystore ]; then
-            echo "Generating new debug.keystore..."
-            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
+            echo "Error: Failed to decode keystore! File is empty."
+            exit 1
           fi
 
       - name: Grant execute permission for gradlew
