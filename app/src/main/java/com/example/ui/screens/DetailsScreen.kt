@@ -207,7 +207,7 @@ fun DetailsScreen(
                                     type = "text/plain"
                                     putExtra(android.content.Intent.EXTRA_SUBJECT, shareTitle)
                                     val typeString = if (isMovie) "movie" else "tv"
-                                    putExtra(android.content.Intent.EXTRA_TEXT, "Check out $shareTitle on TrackVerse! https://h0-qp.github.io/details/${show?.id}/$isMovie")
+                                    putExtra(android.content.Intent.EXTRA_TEXT, "Check out $shareTitle on TrackVerse! https://h0-qp.github.io/TrackVerse/details/${show?.id}/$isMovie")
                                 }
                                 context.startActivity(android.content.Intent.createChooser(shareIntent, "Share via"))
                             }
