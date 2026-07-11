@@ -57,6 +57,7 @@ fun DetailsScreen(
     sourceKey: String = "",
     onBack: () -> Unit,
     onPersonClick: (Int) -> Unit = {},
+    onShowClick: (Int, Boolean) -> Unit = { _, _ -> },
     detailsViewModel: DetailsViewModel = viewModel(),
     watchlistViewModel: WatchlistViewModel = viewModel(),
     reviewViewModel: ReviewViewModel = viewModel(),
@@ -66,6 +67,7 @@ fun DetailsScreen(
     val show by detailsViewModel.show.collectAsState()
     val isLoading by detailsViewModel.isLoading.collectAsState()
     val error by detailsViewModel.error.collectAsState()
+    val similarContent by detailsViewModel.similarContent.collectAsState()
     val watchlist by watchlistViewModel.watchlist.collectAsState()
     
     val reviews by reviewViewModel.reviews.collectAsState()
@@ -674,7 +676,7 @@ fun DetailsScreen(
                                         }
                                         episodes.forEach { episode ->
                                             val isWatched = watchedEpisodeIds.contains(episode.id)
-                                            val airDateStr = episode.airDate
+                                            val airDateStr = com.example.utils.DateUtils.adjustAirDateOffset(episode.airDate)
                                             var daysUntil = -1
                                         var hoursUntil = -1
                                         if (airDateStr?.isNotEmpty() == true) {
@@ -810,7 +812,45 @@ fun DetailsScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(show?.nextEpisodeToAir?.name ?: androidx.compose.ui.res.stringResource(com.example.R.string.tba), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
-                            Text(String.format(androidx.compose.ui.res.stringResource(com.example.R.string.airs), show?.nextEpisodeToAir?.airDate ?: androidx.compose.ui.res.stringResource(com.example.R.string.unknown_date)), fontSize = 12.sp, color = TextTertiary)
+                            Text(String.format(androidx.compose.ui.res.stringResource(com.example.R.string.airs), com.example.utils.DateUtils.adjustAirDateOffset(show?.nextEpisodeToAir?.airDate) ?: androidx.compose.ui.res.stringResource(com.example.R.string.unknown_date)), fontSize = 12.sp, color = TextTertiary)
+                        }
+                    }
+                }
+                
+                if (similarContent.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.example.R.string.similar_content), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    androidx.compose.foundation.lazy.LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(similarContent) { item ->
+                            Column(
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .clickable { onShowClick(item.id, item.title != null) }
+                            ) {
+                                AsyncImage(
+                                    model = "https://image.tmdb.org/t/p/w342${item.posterPath}",
+                                    contentDescription = item.title ?: item.name,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(2f/3f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(SurfaceDark),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = item.title ?: item.name ?: "",
+                                    color = TextPrimary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
@@ -1006,7 +1046,7 @@ fun EpisodeDetailsSheet(
                     Text("${episode.runtime} min", color = TextSecondary, fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(16.dp))
                 }
-                Text(episode.airDate ?: "", color = TextSecondary, fontSize = 14.sp)
+                Text(com.example.utils.DateUtils.adjustAirDateOffset(episode.airDate) ?: "", color = TextSecondary, fontSize = 14.sp)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(

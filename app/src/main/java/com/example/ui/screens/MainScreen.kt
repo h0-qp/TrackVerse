@@ -81,7 +81,7 @@ fun MainScreen() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
-            val showBottomBar = items.any { it.route == currentRoute }
+            val showBottomBar = items.any { currentRoute?.substringBefore("?") == it.route }
 
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
@@ -158,8 +158,18 @@ fun MainScreen() {
                     composable(Screen.Home.route) { 
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { HomeScreen(navController) }
                     }
-                    composable(Screen.Discover.route) { 
-                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { DiscoverScreen(navController) }
+                    composable(
+                        route = "${Screen.Discover.route}?genreId={genreId}",
+                        arguments = listOf(
+                            androidx.navigation.navArgument("genreId") {
+                                type = androidx.navigation.NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val genreId = backStackEntry.arguments?.getString("genreId")
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { DiscoverScreen(navController, genreId) }
                     }
                     composable(Screen.Social.route) { 
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { SocialScreen() }
@@ -176,15 +186,26 @@ fun MainScreen() {
                     composable("ask_ai") {
                         CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { AiChatScreen(navController = navController) }
                     }
+                    composable("playlist") {
+                        CompositionLocalProvider(LocalAnimatedVisibilityScope provides this) { PlaylistScreen(navController = navController) }
+                    }
                     composable(
                         route = "details/{showId}/{isMovie}?source={source}",
                         arguments = listOf(
                             androidx.navigation.navArgument("showId") { type = androidx.navigation.NavType.IntType },
-                            androidx.navigation.navArgument("isMovie") { type = androidx.navigation.NavType.BoolType },
+                            androidx.navigation.navArgument("isMovie") { 
+                                type = androidx.navigation.NavType.BoolType 
+                                defaultValue = true 
+                            },
                             androidx.navigation.navArgument("source") { 
                                 type = androidx.navigation.NavType.StringType
                                 nullable = true
                                 defaultValue = ""
+                            }
+                        ),
+                        deepLinks = listOf(
+                            androidx.navigation.navDeepLink { 
+                                uriPattern = "https://trackverse.web.app/movie/{showId}" 
                             }
                         ),
                         enterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(400)) },
@@ -203,6 +224,9 @@ fun MainScreen() {
                                 onBack = { navController.popBackStack() },
                                 onPersonClick = { personId ->
                                     navController.navigate("actor/$personId")
+                                },
+                                onShowClick = { id, isMov ->
+                                    navController.navigate("details/$id/$isMov")
                                 }
                             )
                         }

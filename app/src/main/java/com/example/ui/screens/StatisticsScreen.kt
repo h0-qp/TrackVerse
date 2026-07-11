@@ -86,7 +86,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
         watchlistViewModel.loadWatchlist() // explicit fallback execution
     }
 
-    val upcomingEpisodes = unwatchedEpisodes.sortedBy { it.second.airDate ?: "9999-12-31" }
+    val upcomingEpisodes = unwatchedEpisodes.sortedBy { com.example.utils.DateUtils.adjustAirDateOffset(it.second.airDate) ?: "9999-12-31" }
     
     var isRefreshing by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -177,11 +177,11 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                 val groupedEpisodes = java.util.LinkedHashMap<String, MutableList<Pair<TmdbShow, TmdbEpisode>>>()
                 
                 // 1. Sort chronologically
-                val sortedUpcoming = upcomingEpisodes.sortedBy { it.second.airDate ?: "9999-12-31" }
+                val sortedUpcoming = upcomingEpisodes.sortedBy { com.example.utils.DateUtils.adjustAirDateOffset(it.second.airDate) ?: "9999-12-31" }
                 
                 // 2. Exact grouping logic as requested
                 for ((show, episode) in sortedUpcoming) {
-                    val airDateStr = episode.airDate
+                    val airDateStr = com.example.utils.DateUtils.adjustAirDateOffset(episode.airDate)
                     if (airDateStr.isNullOrEmpty()) {
                         groupedEpisodes.getOrPut("later") { mutableListOf() }.add(Pair(show, episode))
                         continue
@@ -249,9 +249,9 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                     }
                     items(episodes) { (show, episode) ->
                         var diffDaysItem = 1 // default to future
-                        if (!episode.airDate.isNullOrEmpty()) {
+                        if (!com.example.utils.DateUtils.adjustAirDateOffset(episode.airDate).isNullOrEmpty()) {
                             try {
-                                val date = java.time.LocalDate.parse(episode.airDate)
+                                val date = java.time.LocalDate.parse(com.example.utils.DateUtils.adjustAirDateOffset(episode.airDate))
                                 val today = java.time.LocalDate.now()
                                 diffDaysItem = java.time.temporal.ChronoUnit.DAYS.between(today, date).toInt()
                             } catch (e: Exception) {}
@@ -335,18 +335,40 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                 }
             }
         } else {
-            val (finishedShows, activeShows) = sortedSeriesWatchlist.partition { show ->
-                val watchedCount = watchedList[show.id]?.size ?: 0
-                val totalEpisodes = show.numberOfEpisodes ?: 0
-                totalEpisodes > 0 && watchedCount >= totalEpisodes
+            val isUnwatchedLoaded = unwatchedEpisodes.isNotEmpty()
+            val activeShowsWithEp = mutableListOf<Pair<TmdbShow, TmdbEpisode?>>()
+            val trueFinishedShows = mutableListOf<TmdbShow>()
+
+            sortedSeriesWatchlist.forEach { show ->
+                val eps = unwatchedEpisodes
+                    .filter { it.first.id == show.id && !watchedList[show.id].orEmpty().contains(it.second.id) }
+                    .map { it.second }
+                    .sortedWith(compareBy({ it.seasonNumber ?: 1 }, { it.episodeNumber ?: 1 }))
+                
+                val ep = eps.firstOrNull()
+                
+                if (ep != null) {
+                    activeShowsWithEp.add(show to ep)
+                } else {
+                    if (isUnwatchedLoaded) {
+                        trueFinishedShows.add(show)
+                    } else {
+                        val watchedCount = watchedList[show.id]?.size ?: 0
+                        val totalEpisodes = show.numberOfEpisodes ?: 0
+                        if (totalEpisodes > 0 && watchedCount >= totalEpisodes) {
+                            trueFinishedShows.add(show)
+                        } else {
+                            activeShowsWithEp.add(show to show.nextEpisodeToAir)
+                        }
+                    }
+                }
             }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                items(activeShows) { show ->
-                    val episode = show.nextEpisodeToAir
+                items(activeShowsWithEp) { (show, episode) ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -379,8 +401,8 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                                 Text("< ${show.displayTitle.uppercase()}", color = Color.White, fontSize = 10.sp)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
-                            val seasonStr = episode?.seasonNumber?.let { String.format("%02d", it) } ?: "01"
-                            val epStr = episode?.episodeNumber?.let { String.format("%02d", it) } ?: "01"
+                            val seasonStr = episode?.seasonNumber?.let { String.format(Locale.US, "%02d", it) } ?: "01"
+                            val epStr = episode?.episodeNumber?.let { String.format(Locale.US, "%02d", it) } ?: "01"
                             Text(
                                 "S$seasonStr | E$epStr",
                                 color = Color.White,
@@ -413,7 +435,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                     }
                 }
 
-                if (finishedShows.isNotEmpty()) {
+                if (trueFinishedShows.isNotEmpty()) {
                     item {
                         Text(
                             text = stringResource(R.string.finished_shows),
@@ -423,7 +445,7 @@ fun StatisticsScreen(navController: NavController? = null, watchlistViewModel: W
                             modifier = Modifier.padding(vertical = 16.dp, horizontal = 8.dp)
                         )
                     }
-                    items(finishedShows) { show ->
+                    items(trueFinishedShows) { show ->
                         val episode = show.nextEpisodeToAir
                         Row(
                             modifier = Modifier

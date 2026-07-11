@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.aistudio.trackverse.abcx",
+      "sha256_cert_fingerprints": [
+        "03:60:CE:6D:EA:45:94:2A:AF:32:DE:65:B1:B5:D4:52:ED:12:68:B4:48:95:0B:AD:F6:BC:44:0A:B1:BA:D1:59"
+      ]
+    }
+  }
+]

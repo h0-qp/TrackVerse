@@ -377,7 +377,7 @@ fun ProfileScreen(
                                     }
                                 }
                                 Button(
-                                    onClick = { /* Navigate to a playlist screen or play first item */ },
+                                    onClick = { navController?.navigate("playlist") },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                                     shape = RoundedCornerShape(16.dp),
                                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)

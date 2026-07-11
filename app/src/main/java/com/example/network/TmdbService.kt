@@ -58,6 +58,16 @@ interface TmdbService {
         @Query("append_to_response") appendToResponse: String = "credits,videos"
     ): TmdbShow
 
+    @GET("3/movie/{movie_id}/similar")
+    suspend fun getSimilarMovies(
+        @retrofit2.http.Path("movie_id") id: Int
+    ): TmdbResponse
+
+    @GET("3/tv/{tv_id}/similar")
+    suspend fun getSimilarShows(
+        @retrofit2.http.Path("tv_id") id: Int
+    ): TmdbResponse
+
     @GET("3/person/{person_id}")
     suspend fun getPersonDetails(
         @retrofit2.http.Path("person_id") id: Int

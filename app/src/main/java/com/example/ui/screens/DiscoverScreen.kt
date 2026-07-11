@@ -26,12 +26,19 @@ import com.example.viewmodel.DiscoverViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DiscoverScreen(navController: NavController, viewModel: DiscoverViewModel = viewModel()) {
+fun DiscoverScreen(navController: NavController, initialGenreId: String? = null, viewModel: DiscoverViewModel = viewModel()) {
     val results by viewModel.discoverResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val currentType by viewModel.currentType.collectAsState()
     
     var showFilters by remember { mutableStateOf(false) }
+
+    LaunchedEffect(initialGenreId) {
+        if (initialGenreId != null) {
+            viewModel.selectedGenre.value = initialGenreId
+            viewModel.applyFilters()
+        }
+    }
 
     Scaffold(
         floatingActionButton = {

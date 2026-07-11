@@ -110,7 +110,7 @@ class CountdownWidgetConfigActivity : ComponentActivity() {
     private suspend fun saveWidgetSettings(show: TmdbShow) {
         val showName = show.name ?: show.title ?: "Unknown Show"
         val nextEp = show.nextEpisodeToAir
-        val airDate = nextEp?.airDate ?: ""
+        val airDate = com.example.utils.DateUtils.adjustAirDateOffset(nextEp?.airDate) ?: ""
         val posterPath = show.posterPath ?: ""
         val backdropPath = show.backdropPath ?: ""
 
@@ -165,7 +165,7 @@ fun ShowItem(show: TmdbShow, onClick: () -> Unit) {
             )
             if (show.nextEpisodeToAir != null) {
                 Text(
-                    text = "Next ep: ${show.nextEpisodeToAir.airDate}",
+                    text = "Next ep: ${com.example.utils.DateUtils.adjustAirDateOffset(show.nextEpisodeToAir.airDate)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary
                 )

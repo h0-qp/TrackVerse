@@ -86,7 +86,7 @@ data class TmdbShow(
     @Json(name = "videos") val videos: TmdbVideosResponse? = null
 ) {
     val displayTitle: String
-        get() = originalName ?: originalTitle ?: name ?: title ?: "Unknown"
+        get() = name ?: title ?: originalName ?: originalTitle ?: "Unknown"
 }
 
 @JsonClass(generateAdapter = true)

@@ -226,7 +226,20 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                     .background(SurfaceDark, CircleShape)
                                     .border(1.dp, BorderStroke, CircleShape)
                                     .clickable { 
-                                        android.widget.Toast.makeText(context, "Filtering by $genre coming soon!", android.widget.Toast.LENGTH_SHORT).show()
+                                        val genreId = when (genre) {
+                                            "Action" -> "10759"
+                                            "Drama" -> "18"
+                                            "Sci-Fi" -> "10765"
+                                            "Comedy" -> "35"
+                                            "Anime" -> "16"
+                                            "Thriller" -> "9648"
+                                            else -> null
+                                        }
+                                        if (genreId != null) {
+                                            navController.navigate("discover?genreId=$genreId")
+                                        } else {
+                                            navController.navigate("discover")
+                                        }
                                     }
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
@@ -244,7 +257,15 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                         verticalAlignment = Alignment.Bottom
                     ) {
                         Text(stringResource(R.string.trending_today), fontSize = 18.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
-                        Text(stringResource(R.string.view_all), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = BlueHighlight)
+                        Text(
+                            text = stringResource(R.string.view_all), 
+                            fontSize = 12.sp, 
+                            fontWeight = FontWeight.Medium, 
+                            color = BlueHighlight,
+                            modifier = Modifier.clickable {
+                                navController.navigate("discover")
+                            }.padding(4.dp)
+                        )
                     }
                 }
 
@@ -341,7 +362,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                 item {
                     // Releasing Today Section
                     val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
-                    val releasingToday = watchlist.filter { show -> show.nextEpisodeToAir?.airDate == today }
+                    val releasingToday = watchlist.filter { show -> com.example.utils.DateUtils.adjustAirDateOffset(show.nextEpisodeToAir?.airDate) == today }
                     
                     if (releasingToday.isNotEmpty()) {
                         Row(

@@ -239,7 +239,37 @@ class WatchlistViewModel(application: Application) : AndroidViewModel(applicatio
                     numberOfSeasons = doc.getLong("numberOfSeasons")?.toInt(),
                     nextEpisodeToAir = nextEpisode,
                     lastEpisodeToAir = lastEpisode
-                )
+                ).also { show ->
+                    // Check if name or title contains Arabic, and if so, sync with TMDB
+                    val nameHasArabic = show.name?.matches(".*\\p{InArabic}.*".toRegex()) == true
+                    val titleHasArabic = show.title?.matches(".*\\p{InArabic}.*".toRegex()) == true
+                    
+                    if (nameHasArabic || titleHasArabic) {
+                        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                val tmdbShow = if (show.name != null) {
+                                    com.example.network.ApiClient.tmdbService.getTvDetails(show.id)
+                                } else {
+                                    com.example.network.ApiClient.tmdbService.getMovieDetails(show.id)
+                                }
+                                
+                                val updates = hashMapOf<String, Any>()
+                                tmdbShow.name?.let { updates["name"] = it }
+                                tmdbShow.title?.let { updates["title"] = it }
+                                tmdbShow.overview?.let { updates["overview"] = it }
+                                
+                                val user = auth.currentUser
+                                if (user != null && updates.isNotEmpty()) {
+                                    db.collection("users").document(user.uid)
+                                      .collection("watchlist").document(show.id.toString())
+                                      .update(updates)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 null
             }

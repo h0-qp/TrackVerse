@@ -25,6 +25,9 @@ class DetailsViewModel : ViewModel() {
     private val _watchProviders = MutableStateFlow<com.example.network.WatchProvidersResponse?>(null)
     val watchProviders: StateFlow<com.example.network.WatchProvidersResponse?> = _watchProviders
 
+    private val _similarContent = MutableStateFlow<List<TmdbShow>>(emptyList())
+    val similarContent: StateFlow<List<TmdbShow>> = _similarContent
+
     fun loadDetails(id: Int, isMovie: Boolean) {
         _isLoading.value = true
         _error.value = null
@@ -36,6 +39,17 @@ class DetailsViewModel : ViewModel() {
                     ApiClient.tmdbService.getTvDetails(id)
                 }
                 _show.value = details
+
+                try {
+                    val similarResponse = if (isMovie) {
+                        ApiClient.tmdbService.getSimilarMovies(id)
+                    } else {
+                        ApiClient.tmdbService.getSimilarShows(id)
+                    }
+                    _similarContent.value = similarResponse.results?.take(10) ?: emptyList()
+                } catch (e: Exception) {
+                    _similarContent.value = emptyList()
+                }
 
                 try {
                     val providers = if (isMovie) {

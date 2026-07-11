@@ -1,0 +1,5 @@
+{
+    "success": false,
+    "errorcode": 415,
+    "description": "Filetype not allowed"
+}
