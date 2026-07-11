@@ -1,24 +1,5 @@
+Trying store-eu-par-3
+Failed store-eu-par-3
 Trying store-eu-par-5
-Failed store-eu-par-5
-Trying store-eu-par-4
-Failed store-eu-par-4
-Trying store-eu-par-7
-error-notOwner
+{"data":{"createTime":1783804993,"downloadPage":"https://gofile.io/d/H4ba2a","guestToken":"rH2NJJ5kly9cAzVsVxwBeeQHBjDeXLJZ","id":"a226f60a-326a-4cab-9c84-3f62cd43c3cb","md5":"c6066a8e540c473a510b8190e5d85f5c","mimetype":"application/zip","modTime":1783804993,"name":"app-release.apk","parentFolder":"ea14f769-bbd1-449c-8456-2d4ff4b5cce4","parentFolderCode":"H4ba2a","servers":["store-eu-par-5"],"size":21283651,"type":"file"},"status":"ok"}
 
-Trying store-na-phx-5
-Failed store-na-phx-5
-Trying store9
-Failed store9
-Trying store8
-Failed store8
-Trying store-na-phx-4
-error-notOwner
-
-Trying store-na-phx-3
-error-notOwner
-
-Trying store4
-Failed store4
-Trying store-na-phx-1
-Failed store-na-phx-1
-Trying store1

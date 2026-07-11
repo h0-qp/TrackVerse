@@ -31,7 +31,8 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="trackverse.web.app" android:pathPrefix="/movie" />
+                <data android:scheme="https" android:host="h0-qp.github.io" android:pathPrefix="/details" />
+                <data android:scheme="https" android:host="h0-qp.github.io" android:pathPrefix="/tv" />
             </intent-filter>
         </activity>
         <activity

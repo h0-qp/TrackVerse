@@ -205,7 +205,7 @@ fun MainScreen() {
                         ),
                         deepLinks = listOf(
                             androidx.navigation.navDeepLink { 
-                                uriPattern = "https://trackverse.web.app/movie/{showId}" 
+                                uriPattern = "https://h0-qp.github.io/details/{showId}/{isMovie}" 
                             }
                         ),
                         enterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(400)) },
